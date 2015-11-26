@@ -3,7 +3,7 @@
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has
 to be run on your server and have access to your private Let's Encrypt account
-key, I tried to make it as tiny as possilbe (currently less than 200 lines).
+key, I tried to make it as tiny as possible (currently less than 200 lines).
 The only prerequisites are python and openssl.
 
 **PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!**
@@ -24,7 +24,8 @@ you should only have to do Steps 3 and 6.
 
 You must have a public key registered with Let's Encrypt and sign your requests
 with the corresponding private key. If you don't understand what I just said,
-this script likely isn't for you! Please use the official Let's Encrypt client.
+this script likely isn't for you! Please use the official Let's Encrypt
+[client](https://github.com/letsencrypt/letsencrypt).
 
 ```
 openssl genrsa 4096 > account.key
