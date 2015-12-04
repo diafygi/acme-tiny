@@ -17,7 +17,7 @@ def get_crt(account_key, csr, acme_dir):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
-        raise IOError("Error reading account key")
+        raise IOError("OpenSSL Error: {}".format(err))
     pub_hex, pub_exp = re.search(
         "modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         out, re.MULTILINE|re.DOTALL).groups()
@@ -48,8 +48,8 @@ def get_crt(account_key, csr, acme_dir):
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate("{}.{}".format(protected64, payload64))
-        if err:
-            return 500, err
+        if proc.returncode != 0:
+            raise IOError("OpenSSL Error: {}".format(err))
         data = json.dumps({
             "header": header,
             "protected": protected64,
@@ -68,7 +68,7 @@ def get_crt(account_key, csr, acme_dir):
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
-        raise IOError("Error loading {}".format(csr))
+        raise IOError("Error loading {}: {}".format(csr, err))
     domains = set([])
     common_name = re.search("Subject:.*? CN=([^\s,;/]+)", out)
     if common_name is not None:
