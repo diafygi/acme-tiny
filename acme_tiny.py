@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, urllib2, sys, base64, binascii, time, \
+import argparse, subprocess, json, os, os.path, urllib2, sys, base64, binascii, time, \
     hashlib, re, copy, textwrap
 
 #CA = "https://acme-staging.api.letsencrypt.org"
@@ -111,8 +111,7 @@ def get_crt(account_key, csr, acme_dir):
         # make the challenge file
         challenge = [c for c in json.loads(result)['challenges'] if c['type'] == "http-01"][0]
         keyauthorization = "{0}.{1}".format(challenge['token'], thumbprint)
-        acme_dir = acme_dir[:-1] if acme_dir.endswith("/") else acme_dir
-        wellknown_path = "{0}/{1}".format(acme_dir, challenge['token'])
+        wellknown_path = os.path.join(acme_dir, challenge['token'])
         wellknown_file = open(wellknown_path, "w")
         wellknown_file.write(keyauthorization)
         wellknown_file.close()
