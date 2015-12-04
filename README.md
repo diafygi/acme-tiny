@@ -160,7 +160,7 @@ challenge web folder as much as possible. I'd recommend creating a user
 specifically for handling this script, the account private key, and the
 challenge folder. Then add the ability for that user to write to your installed
 certificate file (e.g. `/path/to/chained.pem`) and reload your webserver. That
-way, the cron script will do it's thing, overwrite your old certificate, and
+way, the cron script will do its thing, overwrite your old certificate, and
 reload your webserver without having permission to do anything else.
 
 **BE SURE TO:**
