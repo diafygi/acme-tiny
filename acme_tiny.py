@@ -17,14 +17,14 @@ def get_crt(account_key, csr, acme_dir):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {}".format(err))
+        raise IOError("OpenSSL Error: {0}".format(err))
     pub_hex, pub_exp = re.search(
         "modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         out, re.MULTILINE|re.DOTALL).groups()
     pub_mod = binascii.unhexlify(re.sub("(\s|:)", "", pub_hex))
     pub_mod64 = _b64(pub_mod)
     pub_exp = "{0:x}".format(int(pub_exp))
-    pub_exp = "0{}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
+    pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
     pub_exp64 = _b64(binascii.unhexlify(pub_exp))
     header = {
         "alg": "RS256",
@@ -47,9 +47,9 @@ def get_crt(account_key, csr, acme_dir):
         protected64 = _b64(json.dumps(protected))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = proc.communicate("{}.{}".format(protected64, payload64))
+        out, err = proc.communicate("{0}.{1}".format(protected64, payload64))
         if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {}".format(err))
+            raise IOError("OpenSSL Error: {0}".format(err))
         data = json.dumps({
             "header": header,
             "protected": protected64,
@@ -68,7 +68,7 @@ def get_crt(account_key, csr, acme_dir):
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
-        raise IOError("Error loading {}: {}".format(csr, err))
+        raise IOError("Error loading {0}: {1}".format(csr, err))
     domains = set([])
     common_name = re.search("Subject:.*? CN=([^\s,;/]+)", out)
     if common_name is not None:
@@ -91,11 +91,11 @@ def get_crt(account_key, csr, acme_dir):
     elif code == 409:
         sys.stderr.write("already registered!\n")
     else:
-        raise ValueError("Error registering: {} {}".format(code, result))
+        raise ValueError("Error registering: {0} {1}".format(code, result))
 
     # verify each domain
     for domain in domains:
-        sys.stderr.write("Verifying {}...".format(domain))
+        sys.stderr.write("Verifying {0}...".format(domain))
 
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
@@ -106,26 +106,26 @@ def get_crt(account_key, csr, acme_dir):
             },
         })
         if code != 201:
-            raise ValueError("Error registering: {} {}".format(code, result))
+            raise ValueError("Error registering: {0} {1}".format(code, result))
 
         # make the challenge file
         challenge = [c for c in json.loads(result)['challenges'] if c['type'] == "http-01"][0]
-        keyauthorization = "{}.{}".format(challenge['token'], thumbprint)
+        keyauthorization = "{0}.{1}".format(challenge['token'], thumbprint)
         acme_dir = acme_dir[:-1] if acme_dir.endswith("/") else acme_dir
-        wellknown_path = "{}/{}".format(acme_dir, challenge['token'])
+        wellknown_path = "{0}/{1}".format(acme_dir, challenge['token'])
         wellknown_file = open(wellknown_path, "w")
         wellknown_file.write(keyauthorization)
         wellknown_file.close()
 
         # check that the file is in place
-        wellknown_url = "http://{}/.well-known/acme-challenge/{}".format(
+        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(
             domain, challenge['token'])
         try:
             resp = urllib2.urlopen(wellknown_url)
             assert resp.read().strip() == keyauthorization
         except (urllib2.HTTPError, urllib2.URLError, AssertionError):
             os.remove(wellknown_path)
-            raise ValueError("Wrote file to {}, but couldn't download {}".format(
+            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
                 wellknown_path, wellknown_url))
 
         # notify challenge are met
@@ -134,7 +134,7 @@ def get_crt(account_key, csr, acme_dir):
             "keyAuthorization": keyauthorization,
         })
         if code != 202:
-            raise ValueError("Error triggering challenge: {} {}".format(code, result))
+            raise ValueError("Error triggering challenge: {0} {1}".format(code, result))
 
         # wait for challenge to be verified
         while True:
@@ -142,7 +142,7 @@ def get_crt(account_key, csr, acme_dir):
                 resp = urllib2.urlopen(challenge['uri'])
                 challenge_status = json.loads(resp.read())
             except urllib2.HTTPError as e:
-                raise ValueError("Error checking challenge: {} {}".format(
+                raise ValueError("Error checking challenge: {0} {1}".format(
                     e.code, json.loads(e.read())))
             if challenge_status['status'] == "pending":
                 time.sleep(2)
@@ -151,7 +151,7 @@ def get_crt(account_key, csr, acme_dir):
                 os.remove(wellknown_path)
                 break
             else:
-                raise ValueError("{} challenge did not pass: {}".format(
+                raise ValueError("{0} challenge did not pass: {1}".format(
                     domain, challenge_status))
 
     # get the new certificate
@@ -164,11 +164,11 @@ def get_crt(account_key, csr, acme_dir):
         "csr": _b64(csr_der),
     })
     if code != 201:
-        raise ValueError("Error signing certificate: {} {}".format(code, result))
+        raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
     # return signed certificate!
     sys.stderr.write("signed!\n")
-    return """-----BEGIN CERTIFICATE-----\n{}\n-----END CERTIFICATE-----\n""".format(
+    return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result), 64)))
 
 if __name__ == "__main__":
