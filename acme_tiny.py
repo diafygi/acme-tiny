@@ -48,6 +48,8 @@ def get_crt(account_key, csr, acme_dir):
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate("{}.{}".format(protected64, payload64))
+        if err:
+            return 500, err
         data = json.dumps({
             "header": header,
             "protected": protected64,
