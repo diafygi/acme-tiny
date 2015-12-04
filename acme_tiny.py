@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, os.path, urllib2, sys, base64, binascii, time, \
-    hashlib, re, copy, textwrap
-
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap
+try:
+    from urllib.request import urlopen
+except ImportError:  # Python 2
+    from urllib2 import urlopen
 #CA = "https://acme-staging.api.letsencrypt.org"
 CA = "https://acme-v01.api.letsencrypt.org"
 
@@ -9,7 +11,7 @@ def get_crt(account_key, csr, acme_dir):
 
     # helper function base64 encode for jose spec
     def _b64(b):
-        return base64.urlsafe_b64encode(b).replace("=", "")
+        return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
     sys.stderr.write("Parsing account key...")
@@ -20,7 +22,7 @@ def get_crt(account_key, csr, acme_dir):
         raise IOError("OpenSSL Error: {0}".format(err))
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
-        out, re.MULTILINE|re.DOTALL).groups()
+        out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
     pub_mod = binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex))
     pub_mod64 = _b64(pub_mod)
     pub_exp = "{0:x}".format(int(pub_exp))
@@ -35,19 +37,19 @@ def get_crt(account_key, csr, acme_dir):
         },
     }
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
-    thumbprint = _b64(hashlib.sha256(accountkey_json).digest())
+    thumbprint = _b64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
     sys.stderr.write("parsed!\n")
 
     # helper function make signed requests
     def _send_signed_request(url, payload):
-        nonce = urllib2.urlopen(CA + "/directory").headers['Replay-Nonce']
-        payload64 = _b64(json.dumps(payload))
+        nonce = urlopen(CA + "/directory").headers['Replay-Nonce']
+        payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
         protected.update({"nonce": nonce})
-        protected64 = _b64(json.dumps(protected))
+        protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = proc.communicate("{0}.{1}".format(protected64, payload64))
+        out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
         if proc.returncode != 0:
             raise IOError("OpenSSL Error: {0}".format(err))
         data = json.dumps({
@@ -57,9 +59,9 @@ def get_crt(account_key, csr, acme_dir):
             "signature": _b64(out),
         })
         try:
-            resp = urllib2.urlopen(url, data)
+            resp = urlopen(url, data.encode('utf8'))
             return resp.getcode(), resp.read()
-        except urllib2.HTTPError as e:
+        except IOError as e:
             return e.code, e.read()
 
     # find domains
@@ -70,10 +72,10 @@ def get_crt(account_key, csr, acme_dir):
     if proc.returncode != 0:
         raise IOError("Error loading {0}: {1}".format(csr, err))
     domains = set([])
-    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out)
+    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
         domains.add(common_name.group(1))
-    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out, re.MULTILINE|re.DOTALL)
+    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE|re.DOTALL)
     if subject_alt_names is not None:
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
@@ -100,16 +102,13 @@ def get_crt(account_key, csr, acme_dir):
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
             "resource": "new-authz",
-            "identifier": {
-                "type": "dns",
-                "value": domain,
-            },
+            "identifier": {"type": "dns", "value": domain},
         })
         if code != 201:
             raise ValueError("Error registering: {0} {1}".format(code, result))
 
         # make the challenge file
-        challenge = [c for c in json.loads(result)['challenges'] if c['type'] == "http-01"][0]
+        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
         challenge['token'] = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(challenge['token'], thumbprint)
         wellknown_path = os.path.join(acme_dir, challenge['token'])
@@ -121,9 +120,9 @@ def get_crt(account_key, csr, acme_dir):
         wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(
             domain, challenge['token'])
         try:
-            resp = urllib2.urlopen(wellknown_url)
-            assert resp.read().strip() == keyauthorization
-        except (urllib2.HTTPError, urllib2.URLError, AssertionError):
+            resp = urlopen(wellknown_url)
+            assert resp.read().decode('utf8').strip() == keyauthorization
+        except (IOError, AssertionError):
             os.remove(wellknown_path)
             raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
                 wellknown_path, wellknown_url))
@@ -139,11 +138,11 @@ def get_crt(account_key, csr, acme_dir):
         # wait for challenge to be verified
         while True:
             try:
-                resp = urllib2.urlopen(challenge['uri'])
-                challenge_status = json.loads(resp.read())
-            except urllib2.HTTPError as e:
+                resp = urlopen(challenge['uri'])
+                challenge_status = json.loads(resp.read().decode('utf8'))
+            except IOError as e:
                 raise ValueError("Error checking challenge: {0} {1}".format(
-                    e.code, json.loads(e.read())))
+                    e.code, json.loads(e.read().decode('utf8'))))
             if challenge_status['status'] == "pending":
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
@@ -169,7 +168,7 @@ def get_crt(account_key, csr, acme_dir):
     # return signed certificate!
     sys.stderr.write("signed!\n")
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
-        "\n".join(textwrap.wrap(base64.b64encode(result), 64)))
+        "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
