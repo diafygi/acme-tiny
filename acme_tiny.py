@@ -110,7 +110,7 @@ def get_crt(account_key, csr, acme_dir):
 
         # make the challenge file
         challenge = [c for c in json.loads(result)['challenges'] if c['type'] == "http-01"][0]
-        challenge['token'] = re.sub("[^A-Za-z0-9_\-]", "_", challenge['token'])
+        challenge['token'] = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(challenge['token'], thumbprint)
         wellknown_path = os.path.join(acme_dir, challenge['token'])
         wellknown_file = open(wellknown_path, "w")
