@@ -113,9 +113,8 @@ def get_crt(account_key, csr, acme_dir):
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
         wellknown_path = os.path.join(acme_dir, token)
-        wellknown_file = open(wellknown_path, "w")
-        wellknown_file.write(keyauthorization)
-        wellknown_file.close()
+        with open(wellknown_path, "w") as wellknown_file:
+            wellknown_file.write(keyauthorization)
 
         # check that the file is in place
         wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
