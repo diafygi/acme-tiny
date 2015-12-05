@@ -61,7 +61,9 @@ on port 80 (not port 443).
 ```
 #make some challenge folder (modify to suit your needs)
 mkdir -p /var/www/challenges/
+```
 
+```nginx
 #example for nginx
 server {
     listen 80;
