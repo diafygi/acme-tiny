@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap
 try:
-    from urllib.request import urlopen
-except ImportError:  # Python 2
-    from urllib2 import urlopen
+    from urllib.request import urlopen # Python 3
+except ImportError:
+    from urllib2 import urlopen # Python 2
+
 #CA = "https://acme-staging.api.letsencrypt.org"
 CA = "https://acme-v01.api.letsencrypt.org"
 
