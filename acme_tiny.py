@@ -40,10 +40,9 @@ def get_crt(account_key, csr, acme_dir):
 
     # helper function make signed requests
     def _send_signed_request(url, payload):
-        nonce = urlopen(CA + "/directory").headers['Replay-Nonce']
         payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        protected.update({"nonce": nonce})
+        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
