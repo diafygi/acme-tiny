@@ -24,17 +24,14 @@ def get_crt(account_key, csr, acme_dir):
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
-    pub_mod = binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex))
-    pub_mod64 = _b64(pub_mod)
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
-    pub_exp64 = _b64(binascii.unhexlify(pub_exp))
     header = {
         "alg": "RS256",
         "jwk": {
-            "e": pub_exp64,
+            "e": _b64(binascii.unhexlify(pub_exp)),
             "kty": "RSA",
-            "n": pub_mod64,
+            "n": _b64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex))),
         },
     }
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
