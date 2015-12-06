@@ -7,4 +7,4 @@ python:
   - "3.4"
   - "3.5"
   - "nightly"
-script: python -m unittest discover
+script: python -m unittest tests
