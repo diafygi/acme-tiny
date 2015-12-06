@@ -13,7 +13,6 @@ LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
-
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -53,10 +52,8 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         if proc.returncode != 0:
             raise IOError("OpenSSL Error: {0}".format(err))
         data = json.dumps({
-            "header": header,
-            "protected": protected64,
-            "payload": payload64,
-            "signature": _b64(out),
+            "header": header, "protected": protected64,
+            "payload": payload64, "signature": _b64(out),
         })
         try:
             resp = urlopen(url, data.encode('utf8'))
@@ -104,7 +101,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             "identifier": {"type": "dns", "value": domain},
         })
         if code != 201:
-            raise ValueError("Error registering: {0} {1}".format(code, result))
+            raise ValueError("Error requesting challenges: {0} {1}".format(code, result))
 
         # make the challenge file
         challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
@@ -168,7 +165,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
-if __name__ == "__main__":
+def main(argv):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent("""\
@@ -192,7 +189,10 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
+
+if __name__ == "__main__": # pragma: no cover
+    main(sys.argv[1:])
