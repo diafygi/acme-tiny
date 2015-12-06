@@ -1,7 +1,7 @@
 # acme-tiny
 
 [![Build Status](https://travis-ci.org/diafygi/acme-tiny.svg)](https://travis-ci.org/diafygi/acme-tiny)
-[![Coverage Status](https://coveralls.io/repos/diafygi/acme-tiny/badge.svg?branch=travis-ci&service=github)](https://coveralls.io/github/diafygi/acme-tiny?branch=travis-ci)
+[![Coverage Status](https://coveralls.io/repos/diafygi/acme-tiny/badge.svg?branch=master&service=github)](https://coveralls.io/github/diafygi/acme-tiny?branch=master)
 
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has
