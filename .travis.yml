@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: python
 python:
   - "2.6"
@@ -6,8 +8,10 @@ python:
   - "3.4"
   - "3.5"
   - "nightly"
+before_install:
+  - sudo apt-get install fuse
 install:
-  - pip install coveralls
+  - pip install -r tests/requirements.txt
 script:
   - coverage run -m unittest tests
 after_success:
