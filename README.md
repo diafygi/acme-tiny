@@ -1,5 +1,7 @@
 # acme-tiny
 
+[![Build Status](https://travis-ci.org/diafygi/acme-tiny.svg)](https://travis-ci.org/diafygi/acme-tiny)
+
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has
 to be run on your server and have access to your private Let's Encrypt account
