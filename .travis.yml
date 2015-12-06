@@ -7,4 +7,5 @@ python:
   - "3.4"
   - "3.5"
   - "nightly"
-script: python -m unittest tests
+install: pip install coveralls
+script: coverage run -m unittest tests
