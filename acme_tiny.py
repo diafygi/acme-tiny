@@ -28,17 +28,14 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER):
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
-    pub_mod = binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex))
-    pub_mod64 = _b64(pub_mod)
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
-    pub_exp64 = _b64(binascii.unhexlify(pub_exp))
     header = {
         "alg": "RS256",
         "jwk": {
-            "e": pub_exp64,
+            "e": _b64(binascii.unhexlify(pub_exp)),
             "kty": "RSA",
-            "n": pub_mod64,
+            "n": _b64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex))),
         },
     }
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
@@ -46,10 +43,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER):
 
     # helper function make signed requests
     def _send_signed_request(url, payload):
-        nonce = urlopen(CA + "/directory").headers['Replay-Nonce']
         payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        protected.update({"nonce": nonce})
+        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -112,16 +108,14 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER):
 
         # make the challenge file
         challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
-        challenge['token'] = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
-        keyauthorization = "{0}.{1}".format(challenge['token'], thumbprint)
-        wellknown_path = os.path.join(acme_dir, challenge['token'])
-        wellknown_file = open(wellknown_path, "w")
-        wellknown_file.write(keyauthorization)
-        wellknown_file.close()
+        token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
+        keyauthorization = "{0}.{1}".format(token, thumbprint)
+        wellknown_path = os.path.join(acme_dir, token)
+        with open(wellknown_path, "w") as wellknown_file:
+            wellknown_file.write(keyauthorization)
 
         # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(
-            domain, challenge['token'])
+        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
             resp = urlopen(wellknown_url)
             assert resp.read().decode('utf8').strip() == keyauthorization
