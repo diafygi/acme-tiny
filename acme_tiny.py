@@ -5,11 +5,14 @@ try:
 except ImportError:
     from urllib2 import urlopen # Python 2
 
+#DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
+DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA="https://acme-v01.api.letsencrypt.org"):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     # helper function base64 encode for jose spec
     def _b64(b):
@@ -186,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", required=False, default="https://acme-v01.api.letsencrypt.org", help="ACME CA server to handle requests")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="ACME CA server to handle requests")
 
     args = parser.parse_args()
     LOGGER.setLevel(args.quiet or LOGGER.level)
