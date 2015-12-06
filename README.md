@@ -143,10 +143,9 @@ for example script).
 Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
-CERT=python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ || exit
-echo $CERT > /path/to/signed.crt
+python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /tmp/signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem > intermediate.pem
-cat /path/to/signed.crt intermediate.pem > /path/to/chained.pem
+cat /tmp/signed.crt intermediate.pem > /path/to/chained.pem
 service nginx reload
 ```
 
