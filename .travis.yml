@@ -6,5 +6,9 @@ python:
   - "3.4"
   - "3.5"
   - "nightly"
-install: pip install coveralls
-script: coverage run -m unittest tests
+install:
+  - pip install coveralls
+script:
+  - coverage run -m unittest tests
+after_success:
+  - coveralls
