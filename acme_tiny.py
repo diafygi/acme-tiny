@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", default=DEFAULT_CA, help="ACME CA server to handle requests")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args()
     LOGGER.setLevel(args.quiet or LOGGER.level)
