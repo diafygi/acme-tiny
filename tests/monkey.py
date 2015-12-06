@@ -29,7 +29,7 @@ def gen_keys():
 
 # fake a folder structure to catch the key authorization file
 FS = {}
-class Passthrough(LoggingMixIn, Operations):
+class Passthrough(LoggingMixIn, Operations): # pragma: no cover
     def getattr(self, path, fh=None):
         f = FS.get(path, None)
         if f is None:
@@ -49,5 +49,5 @@ class Passthrough(LoggingMixIn, Operations):
         del(FS[path])
         return 0
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     FUSE(Passthrough(), sys.argv[1], nothreads=True, foreground=True)
