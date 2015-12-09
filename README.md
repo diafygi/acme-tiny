@@ -70,7 +70,7 @@ mkdir -p /var/www/challenges/
 #example for nginx
 server {
     listen 80;
-    server_name yoursite.com, www.yoursite.com;
+    server_name yoursite.com www.yoursite.com;
 
     location /.well-known/acme-challenge/ {
         alias /var/www/challenges/;
