@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, account_email, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -57,9 +57,33 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         })
         try:
             resp = urlopen(url, data.encode('utf8'))
-            return resp.getcode(), resp.read()
+            return resp.getcode(), resp.read(), resp.headers
         except IOError as e:
-            return e.code, e.read()
+            return e.code, e.read(), e.headers
+
+    if account_email:
+        # get the certificate domains and expiration
+        log.info("Registering account...")
+        reg = {
+            "resource": "new-reg",
+            "contact": ["mailto:" + account_email],
+            "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
+        }
+        code, result, headers = _send_signed_request(CA + "/acme/new-reg", reg)
+        if code == 201:
+            account = json.loads(result.decode('utf8'))
+            log.info("Registered account " + str(account["id"]) + " " + str(account["createdAt"]))
+        elif code == 409:
+            log.info("Already registered")
+            reg["resource"] = "reg"
+            code, result, headers = _send_signed_request(headers["Location"], reg)
+            if code == 202:
+                account = json.loads(result.decode('utf8'))
+                log.info("Updated account " + str(account["id"]) + " " + str(account["createdAt"]))
+            else:
+                raise ValueError("Error updating registration: {0} {1}".format(code, result))
+        else:
+            raise ValueError("Error registering: {0} {1}".format(code, result))
 
     # find domains
     log.info("Parsing CSR...")
@@ -78,25 +102,12 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
 
-    # get the certificate domains and expiration
-    log.info("Registering account...")
-    code, result = _send_signed_request(CA + "/acme/new-reg", {
-        "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
-    })
-    if code == 201:
-        log.info("Registered!")
-    elif code == 409:
-        log.info("Already registered!")
-    else:
-        raise ValueError("Error registering: {0} {1}".format(code, result))
-
     # verify each domain
     for domain in domains:
         log.info("Verifying {0}...".format(domain))
 
         # get new challenge
-        code, result = _send_signed_request(CA + "/acme/new-authz", {
+        code, result, headers = _send_signed_request(CA + "/acme/new-authz", {
             "resource": "new-authz",
             "identifier": {"type": "dns", "value": domain},
         })
@@ -123,7 +134,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                 wellknown_path, wellknown_url))
 
         # notify challenge are met
-        code, result = _send_signed_request(challenge['uri'], {
+        code, result, headers = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
             "keyAuthorization": keyauthorization,
         })
@@ -153,7 +164,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
+    code, result, headers = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
     })
@@ -184,6 +195,7 @@ def main(argv):
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
+    parser.add_argument("--account-email", help="register account with contact email address")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
@@ -191,7 +203,7 @@ def main(argv):
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.account_email, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
