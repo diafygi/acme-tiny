@@ -61,6 +61,95 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         except IOError as e:
             return e.code, e.read()
 
+    # helper function for cert requests
+    def _request_certificate():
+        log.info("Signing certificate...")
+        proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        csr_der, err = proc.communicate()
+        code, result = _send_signed_request(CA + "/acme/new-cert", {
+            "resource": "new-cert",
+            "csr": _b64(csr_der),
+        })
+        if code != 201:
+            _exception = ValueError("Error signing certificate: {0} {1}".format(code, result))
+            _exception.__cause__ = None
+            raise _exception
+
+        # return signed certificate!
+        log.info("Certificate signed!")
+        return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
+            "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
+
+    # helper function for Validation
+    def _verify_domains():
+        # verify each domain
+        for domain in domains:
+            log.info("Verifying {0}...".format(domain))
+
+            # get new challenge
+            code, result = _send_signed_request(CA + "/acme/new-authz", {
+                "resource": "new-authz",
+                "identifier": {"type": "dns", "value": domain},
+            })
+            if code != 201:
+                _exception = ValueError("Error requesting challenges: {0} {1}".format(code, result))
+                _exception.__cause__ = None
+                raise _exception
+
+            # make the challenge file
+            challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
+            token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
+            keyauthorization = "{0}.{1}".format(token, thumbprint)
+            wellknown_path = os.path.join(acme_dir, token)
+            with open(wellknown_path, "w") as wellknown_file:
+                wellknown_file.write(keyauthorization)
+
+            # check that the file is in place
+            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+            try:
+                resp = urlopen(wellknown_url)
+                resp_data = resp.read().decode('utf8').strip()
+                assert resp_data == keyauthorization
+            except (IOError, AssertionError):
+                os.remove(wellknown_path)
+                _exception = ValueError("Wrote file to {0}, but couldn't download {1}".format(
+                    wellknown_path, wellknown_url))
+                _exception.__cause__ = None
+                raise _exception
+
+            # notify challenge are met
+            code, result = _send_signed_request(challenge['uri'], {
+                "resource": "challenge",
+                "keyAuthorization": keyauthorization,
+            })
+            if code != 202:
+                _exception = ValueError("Error triggering challenge: {0} {1}".format(code, result))
+                _exception.__cause__ = None
+                raise _exception
+
+            # wait for challenge to be verified
+            while True:
+                try:
+                    resp = urlopen(challenge['uri'])
+                    challenge_status = json.loads(resp.read().decode('utf8'))
+                except IOError as e:
+                    _exception = ValueError("Error checking challenge: {0} {1}".format(
+                        e.code, json.loads(e.read().decode('utf8'))))
+                    _exception.__cause__ = None
+                    raise _exception
+                if challenge_status['status'] == "pending":
+                    time.sleep(2)
+                elif challenge_status['status'] == "valid":
+                    log.info("{0} verified!".format(domain))
+                    os.remove(wellknown_path)
+                    break
+                else:
+                    _exception = ValueError("{0} challenge did not pass: {1}".format( 
+                        domain, challenge_status))
+                    _exception.__cause__ = None
+                    raise _exception
+
     # find domains
     log.info("Parsing CSR...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
@@ -86,84 +175,22 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     })
     if code == 201:
         log.info("Registered!")
+        # Cannot reissue with new registration
+        _verify_domains()
+        signed_crt = _request_certificate()
     elif code == 409:
         log.info("Already registered!")
+        # Try to reissue Cert with key
+        try:
+            signed_crt = _request_certificate()
+        except ValueError:
+            log.info("Not all Domains yet registered to key, requesting challenges")
+            _verify_domains()
+            signed_crt = _request_certificate()
     else:
         raise ValueError("Error registering: {0} {1}".format(code, result))
 
-    # verify each domain
-    for domain in domains:
-        log.info("Verifying {0}...".format(domain))
-
-        # get new challenge
-        code, result = _send_signed_request(CA + "/acme/new-authz", {
-            "resource": "new-authz",
-            "identifier": {"type": "dns", "value": domain},
-        })
-        if code != 201:
-            raise ValueError("Error requesting challenges: {0} {1}".format(code, result))
-
-        # make the challenge file
-        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
-        token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
-        keyauthorization = "{0}.{1}".format(token, thumbprint)
-        wellknown_path = os.path.join(acme_dir, token)
-        with open(wellknown_path, "w") as wellknown_file:
-            wellknown_file.write(keyauthorization)
-
-        # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-        try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
-            assert resp_data == keyauthorization
-        except (IOError, AssertionError):
-            os.remove(wellknown_path)
-            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
-                wellknown_path, wellknown_url))
-
-        # notify challenge are met
-        code, result = _send_signed_request(challenge['uri'], {
-            "resource": "challenge",
-            "keyAuthorization": keyauthorization,
-        })
-        if code != 202:
-            raise ValueError("Error triggering challenge: {0} {1}".format(code, result))
-
-        # wait for challenge to be verified
-        while True:
-            try:
-                resp = urlopen(challenge['uri'])
-                challenge_status = json.loads(resp.read().decode('utf8'))
-            except IOError as e:
-                raise ValueError("Error checking challenge: {0} {1}".format(
-                    e.code, json.loads(e.read().decode('utf8'))))
-            if challenge_status['status'] == "pending":
-                time.sleep(2)
-            elif challenge_status['status'] == "valid":
-                log.info("{0} verified!".format(domain))
-                os.remove(wellknown_path)
-                break
-            else:
-                raise ValueError("{0} challenge did not pass: {1}".format(
-                    domain, challenge_status))
-
-    # get the new certificate
-    log.info("Signing certificate...")
-    proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    csr_der, err = proc.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
-        "resource": "new-cert",
-        "csr": _b64(csr_der),
-    })
-    if code != 201:
-        raise ValueError("Error signing certificate: {0} {1}".format(code, result))
-
-    # return signed certificate!
-    log.info("Certificate signed!")
-    return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
-        "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
+    return signed_crt
 
 def main(argv):
     parser = argparse.ArgumentParser(
