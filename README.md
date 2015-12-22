@@ -44,9 +44,21 @@ Let's Encrypt client.
 The private account key from the Let's Encrypt client is saved in the
 [JWK](https://tools.ietf.org/html/rfc7517) format. `acme-tiny` is using the PEM
 key format. To convert the key, you can use the tool
-[pem-jwk](https://github.com/dannycoates/pem-jwk):
+[conversion script](https://gist.github.com/JonLundy/f25c99ee0770e19dc595) by JonLundy:
 
-    $ pem-jwk /etc/letsencrypt/accounts/acme-v01.api.letsencrypt.org/directory/<id>/private_key.json > account.key
+```sh
+# Download the script
+wget -O - "https://gist.githubusercontent.com/JonLundy/f25c99ee0770e19dc595/raw/6035c1c8938fae85810de6aad1ecf6e2db663e26/conv.py" > conv.py
+
+# Copy your private key to your working directory
+cp /etc/letsencrypt/accounts/acme-v01.api.letsencrypt.org/directory/<id>/private_key.json private_key.json
+
+# Create a DER encoded private key
+openssl asn1parse -noout -out private_key.der -genconf <(python conv.py private_key.json)
+
+# Convert to PEM
+openssl rsa -in private_key.der -inform der > account.key
+```
 
 ### Step 2: Create a certificate signing request (CSR) for your domains.
 
