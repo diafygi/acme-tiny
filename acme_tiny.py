@@ -59,7 +59,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             resp = urlopen(url, data.encode('utf8'))
             return resp.getcode(), resp.read()
         except IOError as e:
-            return e.code, e.read()
+            return getattr(e, "code", None), getattr(e, "read", str(e.reason))
 
     # find domains
     log.info("Parsing CSR...")
