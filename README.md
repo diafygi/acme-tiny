@@ -29,6 +29,8 @@ You must have a public key registered with Let's Encrypt and sign your requests
 with the corresponding private key. If you don't understand what I just said,
 this script likely isn't for you! Please use the official Let's Encrypt
 [client](https://github.com/letsencrypt/letsencrypt).
+To accomplish this you need to initially create a key, that can be used by
+acme-tiny, to register a account for you and sign all following requests.
 
 ```
 openssl genrsa 4096 > account.key
@@ -82,7 +84,7 @@ mkdir -p /var/www/challenges/
 #example for nginx
 server {
     listen 80;
-    server_name yoursite.com, www.yoursite.com;
+    server_name yoursite.com www.yoursite.com;
 
     location /.well-known/acme-challenge/ {
         alias /var/www/challenges/;
