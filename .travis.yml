@@ -9,6 +9,7 @@ python:
   - "nightly"
 before_install:
   - sudo apt-get install fuse
+  - sudo chmod a+r /etc/fuse.conf
 install:
   - pip install -r tests/requirements.txt
 script:
