@@ -24,7 +24,7 @@ class TestModule(unittest.TestCase):
         os.rmdir(self.tempdir)
 
     def test_success_cn(self):
-        """ Successfully issue a certficate via common name """
+        """ Successfully issue a certificate via common name """
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
@@ -41,7 +41,7 @@ class TestModule(unittest.TestCase):
         self.assertIn("Issuer: CN=happy hacker fake CA", out.decode("utf8"))
 
     def test_success_san(self):
-        """ Successfully issue a certficate via subject alt name """
+        """ Successfully issue a certificate via subject alt name """
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
@@ -58,7 +58,7 @@ class TestModule(unittest.TestCase):
         self.assertIn("Issuer: CN=happy hacker fake CA", out.decode("utf8"))
 
     def test_success_cli(self):
-        """ Successfully issue a certficate via command line interface """
+        """ Successfully issue a certificate via command line interface """
         crt, err = Popen([
             "python", "acme_tiny.py",
             "--account-key", KEYS['account_key'].name,
