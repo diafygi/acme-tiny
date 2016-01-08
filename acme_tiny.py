@@ -5,8 +5,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, Request # Python 2
 
-#DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
-DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+DEFAULT_CA = "https://acme-v01.api.letsencrypt.org" # https://acme-staging.api.letsencrypt.org
 REQUEST_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36"
 
 LOGGER = logging.getLogger(__name__)
@@ -115,9 +114,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         # check that the file is in place
         wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
-            req = Request(wellknown_url, data=None,
-                headers = { 'User-Agent' : REQUEST_UA })
-            resp = urlopen(req)
+            resp = urlopen(Request(wellknown_url, headers = { 'User-Agent' : REQUEST_UA })
             resp_data = resp.read().decode('utf8').strip()
             assert resp_data == keyauthorization
         except (IOError, AssertionError):
