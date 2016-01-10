@@ -63,8 +63,9 @@ openssl rsa -in private_key.der -inform der > account.key
 ### Step 2: Create a certificate signing request (CSR) for your domains.
 
 The ACME protocol (what Let's Encrypt uses) requires a CSR file to be submitted
-to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
-you can't use your account private key as your domain private key!
+to it, even for renewals. You can use the same CSR for multiple renewals. NOTES:
+* you can't use your account private key as your domain private key!
+* for SAN (multiple domain) CSRs, openssl.cnf may not be located at the same path as shown in the example below, and will throw `cat: /etc/ssl/openssl.cnf: No such file or directory`.  Depending on your distro, try */etc/pki/tls/openssl.cnf* or `find / -name openssl.cnf` and modify the statement accordingly.
 
 ```
 #generate a domain private key (if you haven't already)
