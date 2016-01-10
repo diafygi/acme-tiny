@@ -98,7 +98,7 @@ server {
     listen 80;
     server_name yoursite.com www.yoursite.com;
 
-    location /.well-known/acme-challenge/ {
+    location ^~ /.well-known/acme-challenge/ {
         alias /var/www/challenges/;
         try_files $uri =404;
     }
