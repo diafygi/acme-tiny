@@ -12,7 +12,11 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt_from_file(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+    with open(csr, "r") as csr_file:
+        return get_crt_from_csr(account_key, csr_file.read(), acme_dir, log, CA)
+
+def get_crt_from_csr(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -63,11 +67,11 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     # find domains
     log.info("Parsing CSR...")
-    proc = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate()
+    proc = subprocess.Popen(["openssl", "req", "-noout", "-text"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate(csr)
     if proc.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr, err))
+        raise IOError("OpenSSL CSR Parsing Error: {0}".format(err))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
@@ -150,9 +154,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     # get the new certificate
     log.info("Signing certificate...")
-    proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    csr_der, err = proc.communicate()
+    proc = subprocess.Popen(["openssl", "req", "-outform", "DER"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    csr_der, err = proc.communicate(csr)
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
@@ -191,7 +195,7 @@ def main(argv):
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt_from_file(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
