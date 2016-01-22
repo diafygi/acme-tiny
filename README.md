@@ -34,7 +34,6 @@ acme-tiny, to register a account for you and sign all following requests.
 
 ```
 openssl genrsa 4096 > account.key
-chmod 600 account.key
 ```
 
 #### Use existing Let's Encrypt key
@@ -59,9 +58,6 @@ openssl asn1parse -noout -out private_key.der -genconf <(python conv.py private_
 
 # Convert to PEM
 openssl rsa -in private_key.der -inform der > account.key
-
-# Read-protect the key
-chmod 600 account.key
 ```
 
 ### Step 2: Create a certificate signing request (CSR) for your domains.
@@ -73,7 +69,6 @@ you can't use your account private key as your domain private key!
 ```
 #generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
-chmod 600 domain.key
 ```
 
 ```
@@ -203,6 +198,40 @@ reload your webserver without having permission to do anything else.
 * Backup your account private key (e.g. `account.key`)
 * Don't allow this script to be able to read your domain private key!
 * Don't allow this script to be run as root!
+
+### Example user setup
+
+```
+# create 'acme' user which will run the script
+useradd acme -d /etc/ssl/acme/ -m
+
+# challenges folder writable for the script, readable for the web server
+mkdir /var/www/challenges/
+chown acme:www-data /var/www/challenges/
+chmod 750 /var/www/challenges/
+
+# create an account key readable only by the script
+openssl genrsa 4096 > /etc/ssl/acme/account.key
+chown acme:acme /etc/ssl/acme/account.key
+chmod 400 /etc/ssl/acme/account.key
+
+# create domain key readable only by the web server
+openssl genrsa 4096 > /etc/ssl/acme/domain.key
+chown www-data:www-data /etc/ssl/acme/domain.key
+chmod 400 /etc/ssl/acme/domain.key
+
+# generate your certificate requests readable only by the script
+openssl req ... > /etc/ssl/acme/domain.csr
+chown acme:acme /etc/ssl/acme/domain.csr
+chmod 400 /etc/ssl/acme/domain.csr
+
+# request your keys readable by the script and the web server
+sudo -u acme -H python acme_tiny.py --account-key /etc/ssl/acme/account.key --csr /etc/ssl/acme/domain.csr --acme-dir /var/www/challenges/ > /etc/ssl/acme/signed.crt
+chown acme:www-data /etc/ssl/acme/signed.crt
+chmod 640 /etc/ssl/acme/signed.crt
+```
+
+Now point your web server configuration to `/etc/ssl/acme/signed.crt`.
 
 ## Feedback/Contributing
 
