@@ -34,6 +34,7 @@ acme-tiny, to register a account for you and sign all following requests.
 
 ```
 openssl genrsa 4096 > account.key
+chmod 600 account.key
 ```
 
 #### Use existing Let's Encrypt key
@@ -58,6 +59,9 @@ openssl asn1parse -noout -out private_key.der -genconf <(python conv.py private_
 
 # Convert to PEM
 openssl rsa -in private_key.der -inform der > account.key
+
+# Read-protect the key
+chmod 600 account.key
 ```
 
 ### Step 2: Create a certificate signing request (CSR) for your domains.
@@ -69,6 +73,7 @@ you can't use your account private key as your domain private key!
 ```
 #generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
+chmod 600 domain.key
 ```
 
 ```
