@@ -214,22 +214,21 @@ chmod 750 /var/www/challenges/
 ( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/account.key )
 chown acme:acme /etc/ssl/acme/account.key
 
-# create domain key readable only by the web server
+# create domain key readable only by the application's user or group
+# for example `root:www-data` for Debian-packaged web servers
 ( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/domain.key )
 chown root:www-data /etc/ssl/acme/domain.key
 
-# generate your certificate requests readable only by the script
+# generate your certificate requests
 openssl req ... > /etc/ssl/acme/domain.csr
 chown acme:acme /etc/ssl/acme/domain.csr
-chmod 644 /etc/ssl/acme/domain.csr
 
-# request your keys readable by the script and the web server
+# request your certificate(s)
 sudo -u acme -H python acme_tiny.py --account-key /etc/ssl/acme/account.key --csr /etc/ssl/acme/domain.csr --acme-dir /var/www/challenges/ > /etc/ssl/acme/signed.crt
-chown acme:www-data /etc/ssl/acme/signed.crt
-chmod 644 /etc/ssl/acme/signed.crt
+chown acme:acme /etc/ssl/acme/signed.crt
 ```
 
-Now point your web server configuration to `/etc/ssl/acme/signed.crt`.
+Now point your application's configuration to `/etc/ssl/acme/signed.crt`.
 
 ## Feedback/Contributing
 
