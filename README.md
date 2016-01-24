@@ -33,7 +33,7 @@ To accomplish this you need to initially create a key, that can be used by
 acme-tiny, to register a account for you and sign all following requests.
 
 ```
-openssl genrsa 4096 > account.key
+( umask 027 && openssl genrsa 4096 > account.key )
 ```
 
 #### Use existing Let's Encrypt key
@@ -68,7 +68,7 @@ you can't use your account private key as your domain private key!
 
 ```
 #generate a domain private key (if you haven't already)
-openssl genrsa 4096 > domain.key
+( umask 027 && openssl genrsa 4096 > domain.key )
 ```
 
 ```
@@ -211,24 +211,22 @@ chown acme:www-data /var/www/challenges/
 chmod 750 /var/www/challenges/
 
 # create an account key readable only by the script
-openssl genrsa 4096 > /etc/ssl/acme/account.key
+( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/account.key )
 chown acme:acme /etc/ssl/acme/account.key
-chmod 400 /etc/ssl/acme/account.key
 
 # create domain key readable only by the web server
-openssl genrsa 4096 > /etc/ssl/acme/domain.key
-chown www-data:www-data /etc/ssl/acme/domain.key
-chmod 400 /etc/ssl/acme/domain.key
+( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/domain.key )
+chown root:www-data /etc/ssl/acme/domain.key
 
 # generate your certificate requests readable only by the script
 openssl req ... > /etc/ssl/acme/domain.csr
 chown acme:acme /etc/ssl/acme/domain.csr
-chmod 400 /etc/ssl/acme/domain.csr
+chmod 644 /etc/ssl/acme/domain.csr
 
 # request your keys readable by the script and the web server
 sudo -u acme -H python acme_tiny.py --account-key /etc/ssl/acme/account.key --csr /etc/ssl/acme/domain.csr --acme-dir /var/www/challenges/ > /etc/ssl/acme/signed.crt
 chown acme:www-data /etc/ssl/acme/signed.crt
-chmod 640 /etc/ssl/acme/signed.crt
+chmod 644 /etc/ssl/acme/signed.crt
 ```
 
 Now point your web server configuration to `/etc/ssl/acme/signed.crt`.
