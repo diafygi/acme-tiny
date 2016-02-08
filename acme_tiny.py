@@ -69,7 +69,7 @@ def get_crt_from_csr(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Parsing CSR...")
     proc = subprocess.Popen(["openssl", "req", "-noout", "-text"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate(csr)
+    out, err = proc.communicate(csr.encode('utf8'))
     if proc.returncode != 0:
         raise IOError("OpenSSL CSR Parsing Error: {0}".format(err))
     domains = set([])
@@ -156,7 +156,7 @@ def get_crt_from_csr(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Signing certificate...")
     proc = subprocess.Popen(["openssl", "req", "-outform", "DER"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    csr_der, err = proc.communicate(csr)
+    csr_der, err = proc.communicate(csr.encode('utf8'))
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
