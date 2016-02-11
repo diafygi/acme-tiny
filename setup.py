@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="acme-tiny",
-    version="1.0.0",
+    use_scm_version=True,
     url="https://github.com/diafygi/acme-tiny",
     author="Daniel Roesler",
     author_email="diafygi@gmail.com",
@@ -12,6 +12,7 @@ setup(
     entry_points={'console_scripts': [
         'acme-tiny = acme_tiny:main',
     ]},
+    setup_requires=['setuptools_scm'],
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: System Administrators'
