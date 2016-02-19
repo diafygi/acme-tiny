@@ -2,7 +2,6 @@
 # -*- encoding: utf-8 -*-
 
 from setuptools import setup
-from glob import glob
 
 long_description = """
 acme-tiny is a tiny script to issue and renew TLS certs from Let's Encrypt
