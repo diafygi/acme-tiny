@@ -107,7 +107,8 @@ server {
 }
 
 #example for httpd (OpenBSD default)
-````
+```
+
 ``` httpd
 server "default" {
         root "/var/www/htdocs/"
