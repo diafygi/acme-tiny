@@ -107,19 +107,17 @@ server {
 }
 
 #example for httpd (OpenBSD default)
-
+````
+``` httpd
 server "default" {
         root "/var/www/htdocs/"
         listen on $IP4 port 80
-        
+    
         location "/.well-known/*"    {
         directory auto index
         }
-        
          ...the rest of your config
 }
-
-
 ```
 
 ### Step 4: Get a signed certificate!
