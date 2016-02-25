@@ -105,11 +105,10 @@ server {
 
     ...the rest of your config
 }
-
-#example for httpd (OpenBSD default)
 ```
 
 ``` httpd
+#example for httpd (OpenBSD default)
 server "default" {
         root "/var/www/htdocs/"
         listen on $IP4 port 80
