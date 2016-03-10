@@ -85,7 +85,7 @@ def get_crt(account_key, csr, acme_dir, account_email, log=LOGGER, CA=DEFAULT_CA
         "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
     }
     if account_email:
-        payload["contact"] = ["mailto:"+account_email]
+        payload["contact"] = ["mailto:{0}".format(account_email)]
     code, result = _send_signed_request(CA + "/acme/new-reg", payload)
     if code == 201:
         log.info("Registered!")
