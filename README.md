@@ -118,6 +118,10 @@ and read your private account key and CSR.
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed.crt
 ```
 
+NOTE - Do not redirect the script's output directly to your master certificate
+file!  Use an intermediate file and check for success first.  Otherwise, if the
+script fails for any reason, you'll overwrite your certificate file.
+
 ### Step 5: Install the certificate
 
 The signed https certificate that is output by this script can be used along
