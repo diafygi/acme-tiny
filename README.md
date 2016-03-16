@@ -84,8 +84,9 @@ openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /e
 You must prove you own the domains you want a certificate for, so Let's Encrypt
 requires you host some files on them. This script will generate and write those
 files in the folder you specify, so all you need to do is make sure that this
-folder is served under the ".well-known/acme-challenge/" url path. NOTE: This
-must be on port 80 (not port 443).
+folder is served under the ".well-known/acme-challenge/" url path. NOTE: Let's
+Encrypt will perform a plain HTTP request to port 80 on your server, so you
+must serve the challenge files via HTTP (a redirect to HTTPS is fine too).
 
 ```
 #make some challenge folder (modify to suit your needs)
