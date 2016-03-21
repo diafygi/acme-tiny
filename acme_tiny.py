@@ -116,10 +116,10 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             resp = urlopen(wellknown_url)
             resp_data = resp.read().decode('utf8').strip()
             assert resp_data == keyauthorization
-        except (IOError, AssertionError):
+        except (IOError, AssertionError) as reason:
             os.remove(wellknown_path)
-            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
-                wellknown_path, wellknown_url))
+            raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(
+                wellknown_path, wellknown_url, reason))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
