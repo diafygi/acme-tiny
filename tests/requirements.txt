@@ -1,0 +1,3 @@
+coveralls
+fusepy
+argparse
