@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) 2015 Daniel Roesler, under the MIT license. See LICENSE for more details.
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen # Python 3
