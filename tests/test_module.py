@@ -38,7 +38,7 @@ class TestModule(unittest.TestCase):
         sys.stdout = old_stdout
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
             stdout=PIPE, stderr=PIPE).communicate(crt)
-        self.assertIn("Issuer: CN=happy hacker fake CA", out.decode("utf8"))
+        self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_success_san(self):
         """ Successfully issue a certificate via subject alt name """
@@ -55,7 +55,7 @@ class TestModule(unittest.TestCase):
         sys.stdout = old_stdout
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
             stdout=PIPE, stderr=PIPE).communicate(crt)
-        self.assertIn("Issuer: CN=happy hacker fake CA", out.decode("utf8"))
+        self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_success_cli(self):
         """ Successfully issue a certificate via command line interface """
@@ -68,7 +68,7 @@ class TestModule(unittest.TestCase):
         ], stdout=PIPE, stderr=PIPE).communicate()
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
             stdout=PIPE, stderr=PIPE).communicate(crt)
-        self.assertIn("Issuer: CN=happy hacker fake CA", out.decode("utf8"))
+        self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_missing_account_key(self):
         """ OpenSSL throws an error when the account key is missing """

@@ -84,8 +84,9 @@ openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /e
 You must prove you own the domains you want a certificate for, so Let's Encrypt
 requires you host some files on them. This script will generate and write those
 files in the folder you specify, so all you need to do is make sure that this
-folder is served under the ".well-known/acme-challenge/" url path. NOTE: This
-must be on port 80 (not port 443).
+folder is served under the ".well-known/acme-challenge/" url path. NOTE: Let's
+Encrypt will perform a plain HTTP request to port 80 on your server, so you
+must serve the challenge files via HTTP (a redirect to HTTPS is fine too).
 
 ```
 #make some challenge folder (modify to suit your needs)
@@ -127,7 +128,7 @@ configure an nginx server:
 
 ```
 #NOTE: For nginx, you need to append the Let's Encrypt intermediate cert to your cert
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem > intermediate.pem
+wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat signed.crt intermediate.pem > chained.pem
 ```
 
@@ -173,7 +174,7 @@ Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
 python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /tmp/signed.crt || exit
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem > intermediate.pem
+wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat /tmp/signed.crt intermediate.pem > /path/to/chained.pem
 service nginx reload
 ```
