@@ -15,7 +15,7 @@ setup(
     setup_requires=['setuptools_scm'],
     classifiers = [
         'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: System Administrators'
+        'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
