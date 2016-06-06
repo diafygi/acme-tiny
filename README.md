@@ -66,10 +66,21 @@ The ACME protocol (what Let's Encrypt uses) requires a CSR file to be submitted
 to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
 you can't use your account private key as your domain private key!
 
+Let's encrypt has support for both RSA and ECDSA certificates. Depending on your
+needs and if you don't have a private key already, you can generate a 4096-bit
+RSA key with the following command:
+
 ```
-#generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
 ```
+
+or a 384-bit ECDSA key with this one:
+
+```
+openssl ecparam -out domain.key -name secp384r1 -genkey
+```
+
+Once you have a private key, you can go forward with the generation of a CSR:
 
 ```
 #for a single domain
