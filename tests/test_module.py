@@ -126,7 +126,7 @@ class TestModule(unittest.TestCase):
         self.assertIsInstance(result, ValueError)
         self.assertIn("Invalid character in DNS name", result.args[0])
 
-    def test_nonexistant_domain(self):
+    def test_nonexistent_domain(self):
         """ Should be unable verify a nonexistent domain """
         try:
             result = acme_tiny.main([
