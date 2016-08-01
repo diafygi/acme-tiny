@@ -5,8 +5,13 @@ try:
 except ImportError:
     from urllib2 import urlopen # Python 2
 
-#DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
-DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+STAGING_FILE = '/tmp/acme_tiny_staging'
+
+if 'ACME_TINY_STAGING' in os.environ or os.path.isfile(STAGING_FILE):
+    DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
+    print 'Work with staging server'
+else:
+    DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
