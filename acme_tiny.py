@@ -7,12 +7,13 @@ except ImportError:
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+DEFAULT_AGREEMENT = "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, agreement=DEFAULT_AGREEMENT):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -82,7 +83,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
+        "agreement": agreement,
     })
     if code == 201:
         log.info("Registered!")
@@ -188,10 +189,11 @@ def main(argv):
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--agreement", default=DEFAULT_AGREEMENT, help="Let’s Encrypt subscriber agreement URL")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, agreement=args.agreement)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
