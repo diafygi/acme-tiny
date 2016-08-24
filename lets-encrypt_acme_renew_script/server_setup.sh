@@ -5,15 +5,15 @@ nginx_config_location=/etc/nginx #change if this is not your config directory
 scripts_location=/usr/local/scripts # change if necessary
 certs_location=ssl
 mkdir -p ${scripts_location}
-mkdir -p ${scripts_location}/acme
 useradd -r -d /nodir -s /usr/sbin/nologin acme
-chown acme:acme /usr/local/scripts/acme
-chmod 750 /usr/local/scripts/acme
-cd /usr/local/scripts/acme
+cd /usr/local/scripts/
+git clone https://github.com/frezbo/acme-tiny.git
+cd acme-tiny/lets-encrypt_acme_renew_script/
 openssl genrsa -out priv.key 4096 # generating private key for registering to lets encrypt and certificate generation, keep it very secure
-git clone 
+chmod 400 priv.key
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-exit
+chown -R acme:acme ${scripts_location}/acme-tiny
+chmod 750 ${scripts_location}/acme-tiny
 mkdir -p ${document_root}/.well-known
 mkdir -p ${document_root}/.well-known/acme-challenge
 chown www-data:acme ${document_root}/.well-known
@@ -26,3 +26,5 @@ mkdir -p ${nginx_config_location}/${certs_location}/certs
 mkdir -p ${nginx_config_location}/${certs_location}/private
 chown -R  acme:root ${nginx_config_location}/${certs_location}
 chmod -R 770 ${nginx_config_location}/${certs_location}
+touch /var/log/renew.log
+chown acme:acme /var/log/renew.log
