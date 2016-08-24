@@ -9,8 +9,8 @@
 2. Make the script executable: `chmod u+x server_setup.sh`
 3. Run server_setup.sh as root: `./server_setup.sh`
 4. If you did not modify the locations in your scrips, follow the steps below, otherwise make changes as necessary
-5. Copy the existing certificate to /etc/nginx/ssl/certs, make sure it follows the format domain.crt. For example if your domain is example.com and has subdomains like mail.example.com do the following: <br/> `cp <path to your certificate> /etc/nginx/ssl/certs`. Make sure to copy the certificates of all the subdomains too.
-6. Copy the domain keys to /etc/nginx/ssl/private, make sure it follows the format domian.key. For example if your domain is example.com and has subdomains like mail.example.com do the following: <br/> `cp <path to your domain key> /etc/nginx/ssl/private`. Make sure to copy the certificates of all the subdomains too.
+5. Copy the existing certificate to /etc/nginx/ssl/certs, make sure it follows the format domain.com.crt. For example if your domain is example.com and has subdomains like mail.example.com do the following: <br/> `cp <path to your certificate> /etc/nginx/ssl/certs`. Make sure to copy the certificates of all the subdomains too.
+6. Copy the domain keys to /etc/nginx/ssl/private, make sure it follows the format domian.com.key. For example if your domain is example.com and has subdomains like mail.example.com do the following: <br/> `cp <path to your domain key> /etc/nginx/ssl/private`. Make sure to copy the certificates of all the subdomains too.
 7. Make the necessary location changes for the domain private key and certificate in your nginx configuration
 8. Run `nginx -t` and make sure there are no errors.
 9. The script creates a user named *acme* which renews the certificates, the script also creates your private key used for authenticating with lets-encrypt and signing necessary files. Please keep this key very private. The key is located in */usr/local/scripts/acme-tiny/lets-encrypt_acme_renew_script*.
