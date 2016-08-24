@@ -1,0 +1,2 @@
+example.com
+mail.example.com
