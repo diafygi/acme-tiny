@@ -4,6 +4,9 @@ language: python
 python:
   - "2.7"
   - "3.3"
+  - "3.4"
+  - "3.5"
+  - "nightly"
 before_install:
   - sudo apt-get install fuse
   - sudo chmod a+r /etc/fuse.conf
