@@ -9,7 +9,7 @@ sudo ufw allow 80/tcp
 ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
 echo "ip: $ip"
 echo "changing dns record"
-curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/$dns_record" -H "X-Auth-Email: $mail" -H "X-Auth-Key: $token" -H "Content-Type: application/json" -d "{\"id\":\"$zone_id\",\"type\":\"A\",\"name\":\"test.frezbo.com\",\"content\":\"$ip\"}" > /dev/null 2>&1
+curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/$dns_record" -H "X-Auth-Email: $mail" -H "X-Auth-Key: $token" -H "Content-Type: application/json" -d "{\"id\":\"$zone_id\",\"type\":\"A\",\"name\":\"test.frezbo.com\",\"content\":\"$ip\"}" | cut -d":" -f6 | cut -d"," -f1
 dig +short @8.8.8.8 A test.frezbo.com
 curl localhost
 sleep 300
