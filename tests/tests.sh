@@ -4,9 +4,10 @@ sudo cp ./tests/nginx.conf /etc/nginx/sites-enabled/test.frezbo.com
 sudo mkdir -p /var/www/html/.well-known
 sudo mkdir -p /var/www/html/.well-known/acme-challenge
 sudo nginx -s reload
+sudo ufw allow 80/tcp
 ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
 curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/$dns_record" -H "X-Auth-Email: $mail" -H "X-Auth-Key: $token" -H "Content-Type: application/json" -d "{\"id\":\"$zone_id\",\"type\":\"A\",\"name\":\"test.frezbo.com\",\"content\":\"$ip\"}" > /dev/null 2>&1
-sleep 10
+sleep 30
 dig +short @8.8.8.8 A test.frezbo.com
 openssl genrsa -out priv.key
 openssl req -new -newkey rsa:2048 -nodes -subj "/CN=test.frezbo.com" -out sign.csr
