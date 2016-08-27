@@ -16,7 +16,7 @@ variable on your local test setup.
   * `scp server.py ubuntu@travis-ci.gethttpsforfree.com`
   * `ssh ubuntu@travis-ci.gethttpsforfree.com`
   * `export TRAVIS_SESSION="<random_string_here>"`
-  * `sudo server.py`
+  * `python server.py`
 4. Install the test requirements on your local (FUSE and optionally coveralls).
   * `sudo apt-get install fuse`
   * `virtualenv /tmp/venv`
