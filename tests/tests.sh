@@ -13,6 +13,7 @@ curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/
 dig +short @8.8.8.8 A test.frezbo.com
 curl localhost
 sleep 300
+dig +short @8.8.8.8 A test.frezbo.com
 curl test.frezbo.com
 openssl genrsa -out priv.key
 openssl req -new -newkey rsa:2048 -nodes -subj "/CN=test.frezbo.com" -out sign.csr
