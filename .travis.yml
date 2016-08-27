@@ -8,10 +8,11 @@ python:
 #  - "3.5"
 #  - "nightly"
 before_install:
-  - chmod u+x ./tests/tests.sh
-#install:
-#  - pip install -r tests/requirements.txt
+  - sudo apt-get install fuse
+  - sudo chmod a+r /etc/fuse.conf
+install:
+  - pip install -r tests/requirements.txt
 script:
-  - ./tests/tests.sh
-#after_success:
-#  - coveralls
+  - coverage run --source ./ --omit ./tests/server.py -m unittest tests
+after_success:
+  - coveralls
