@@ -6,6 +6,7 @@ sudo mkdir -p /var/www/html/.well-known/acme-challenge
 sudo nginx -s reload
 systemctl restart nginx
 sudo ufw allow 80/tcp
+ip addr | grep inet
 ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
 echo "ip: $ip"
 echo "changing dns record"
