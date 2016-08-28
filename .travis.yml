@@ -11,6 +11,10 @@ before_install:
   - sudo apt-get install fuse
   - chmod u+x ./tests/tests.sh
   - ./tests/tests.sh
+  - TRAVIS_DOMAIN=$(grep -Eo "Hostname:[a-z0-9]+.ngrok.io" url.log | head -1 | cut -d':' -f2)
+  - TRAVIS_SESSION=$(openssl rand -base64 32)
+  - echo $TRAVIS_DOMAIN
+  - echo $TRAVIS_SESSION
 install:
   - pip install -r tests/requirements.txt
 script:
