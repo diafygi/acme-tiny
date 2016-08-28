@@ -9,9 +9,10 @@ python:
 #  - "nightly"
 before_install:
   - chmod u+x ./tests/tests.sh
-#install:
-#  - pip install -r tests/requirements.txt
-script:
   - ./tests/tests.sh
-#after_success:
-#  - coveralls
+install:
+  - pip install -r tests/requirements.txt
+script:
+  - coverage run --source ./ --omit ./tests/server.py -m unittest tests
+after_success:
+  - coveralls
