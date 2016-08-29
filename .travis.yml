@@ -3,10 +3,10 @@ dist: trusty
 language: python
 python:
   - "2.7"
-#  - "3.3"
-#  - "3.4"
-#  - "3.5"
-#  - "nightly"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "nightly"
 before_install:
   - chmod u+x ./tests/tests.sh
   - ./tests/tests.sh
