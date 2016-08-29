@@ -8,16 +8,13 @@ python:
 #  - "3.5"
 #  - "nightly"
 before_install:
-  - sudo apt-get install fuse
   - chmod u+x ./tests/tests.sh
   - ./tests/tests.sh
-  - TRAVIS_DOMAIN=$(grep -Eo "Hostname:[a-z0-9]+.ngrok.io" url.log | head -1 | cut -d':' -f2)
-  - TRAVIS_SESSION=$(openssl rand -base64 32)
-  - echo $TRAVIS_DOMAIN
-  - echo $TRAVIS_SESSION
 install:
   - pip install -r tests/requirements.txt
 script:
+  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2
+  - export TRAVIS_SESSION=$(openssl rand -base64 32)
   - coverage run --source ./ --omit ./tests/server.py -m unittest tests
 after_success:
   - coveralls
