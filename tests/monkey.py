@@ -41,12 +41,12 @@ def gen_keys():
     Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
         "-subj", "/CN=\xC3\xA0\xC2\xB2\xC2\xA0_\xC3\xA0\xC2\xB2\xC2\xA0.com", "-out", invalid_csr.name]).wait()
 
-#    # nonexistent domain csr
-#    nonexistent_csr = NamedTemporaryFile()
-#    Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
-#        "-subj", "/CN=404.gethttpsforfree.com", "-out", nonexistent_csr.name]).wait()
+    # nonexistent domain csr
+    nonexistent_csr = NamedTemporaryFile()
+    Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
+        "-subj", "/CN=404.gethttpsforfree.com", "-out", nonexistent_csr.name]).wait()
 
-    # account-signed domain csr
+     account-signed domain csr
     account_csr = NamedTemporaryFile()
     Popen(["openssl", "req", "-new", "-sha256", "-key", account_key.name,
         "-subj", "/CN={0}".format(DOMAIN), "-out", account_csr.name]).wait()
@@ -58,7 +58,7 @@ def gen_keys():
         "domain_csr": domain_csr,
         "san_csr": san_csr,
         "invalid_csr": invalid_csr,
-#        "nonexistent_csr": nonexistent_csr,
+        "nonexistent_csr": nonexistent_csr,
         "account_csr": account_csr,
     }
 

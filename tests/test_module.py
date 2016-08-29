@@ -126,19 +126,19 @@ class TestModule(unittest.TestCase):
         self.assertIsInstance(result, ValueError)
         self.assertIn("Invalid character in DNS name", result.args[0])
 
-#    def test_nonexistant_domain(self):
-#        """ Should be unable verify a nonexistent domain """
-#        try:
-#            result = acme_tiny.main([
-#                "--account-key", KEYS['account_key'].name,
-#                "--csr", KEYS['nonexistent_csr'].name,
-#                "--acme-dir", self.tempdir,
-#                "--ca", self.CA,
-#            ])
-#        except Exception as e:
-#            result = e
-#        self.assertIsInstance(result, ValueError)
-#        self.assertIn("but couldn't download", result.args[0])
+    def test_nonexistant_domain(self):
+        """ Should be unable verify a nonexistent domain """
+        try:
+            result = acme_tiny.main([
+                "--account-key", KEYS['account_key'].name,
+                "--csr", KEYS['nonexistent_csr'].name,
+                "--acme-dir", self.tempdir,
+                "--ca", self.CA,
+            ])
+        except Exception as e:
+            result = e
+        self.assertIsInstance(result, ValueError)
+        self.assertIn("but couldn't download", result.args[0])
 
     def test_account_key_domain(self):
         """ Can't use the account key for the CSR """
