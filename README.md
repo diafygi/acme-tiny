@@ -67,7 +67,13 @@ you can't use your account private key as your domain private key!
 
 ```
 #generate a domain private key (if you haven't already)
-openssl genrsa 4096 > domain.key
+
+For rsa key
+`openssl genrsa 4096 > domain.key`
+
+For ec key
+
+`openssl ecparam -genkey -name secp384r1 | openssl ec -out domain.key`
 ```
 
 ```
@@ -208,3 +214,5 @@ anyone who wants to run it.
 
 If you want to add features for your own setup to make things easier for you,
 please do! It's open source, so feel free to fork it and modify as necessary.
+
+Any help regarding adding dns-01 challenge validation to the python script is appreciated
