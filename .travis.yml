@@ -13,7 +13,7 @@ before_install:
 install:
   - pip install -r tests/requirements.txt
 script:
-  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2
+  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2)
   - export TRAVIS_SESSION=$(openssl rand -base64 32)
   - coverage run --source ./ --omit ./tests/server.py -m unittest tests
 after_success:
