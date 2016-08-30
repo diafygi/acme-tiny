@@ -44,7 +44,7 @@ def gen_keys():
     # nonexistent domain csr
     nonexistent_csr = NamedTemporaryFile()
     Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
-        "-subj", "/CN=404{0}".format(DOMAIN), "-out", nonexistent_csr.name]).wait()
+        "-subj", "/CN=404.{0}".format(DOMAIN), "-out", nonexistent_csr.name]).wait()
 
     #account-signed domain csr
     account_csr = NamedTemporaryFile()
