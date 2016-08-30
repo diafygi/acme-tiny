@@ -14,7 +14,6 @@ chmod 400 priv.key
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 chown -R acme:acme ${scripts_location}/acme-tiny
 chmod 750 ${scripts_location}/acme-tiny
-mkdir -p ${document_root}/.well-known
 mkdir -p ${document_root}/.well-known/acme-challenge
 chown www-data:acme ${document_root}/.well-known
 chmod 770 ${document_root}/.well-known
