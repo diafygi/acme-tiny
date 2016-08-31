@@ -1,7 +1,6 @@
 import os, sys
 from tempfile import NamedTemporaryFile
 from subprocess import Popen
-from fuse import FUSE, Operations, LoggingMixIn
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -61,28 +60,3 @@ def gen_keys():
         "nonexistent_csr": nonexistent_csr,
         "account_csr": account_csr,
     }
-
-# fake a folder structure to catch the key authorization file
-FS = {}
-class Passthrough(LoggingMixIn, Operations): # pragma: no cover
-    def getattr(self, path, fh=None):
-        f = FS.get(path, None)
-        if f is None:
-            return super(Passthrough, self).getattr(path, fh=fh)
-        return f
-
-    def write(self, path, buf, offset, fh):
-        urlopen("http://{0}/.well-known/acme-challenge/?{1}".format(DOMAIN,
-            os.getenv("TRAVIS_SESSION", "not_set")), buf)
-        return len(buf)
-
-    def create(self, path, mode, fi=None):
-        FS[path] = {"st_mode": 33204}
-        return 0
-
-    def unlink(self, path):
-        del(FS[path])
-        return 0
-
-if __name__ == "__main__": # pragma: no cover
-    FUSE(Passthrough(), sys.argv[1], nothreads=True, foreground=True)
