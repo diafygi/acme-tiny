@@ -10,13 +10,10 @@ python:
 before_install:
   - chmod u+x ./tests/tests.sh
   - ./tests/tests.sh
-  - chmod u+x ./lets-encrypt_acme_renew_script/server_setup.sh
-  - sudo ./lets-encrypt_acme_renew_script/server_setup.sh
 install:
   - pip install -r tests/requirements.txt
 script:
-#  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2)
-#  - coverage run --source ./ --omit ./tests/server.py -m unittest tests
-   - su -s /bin/bash -c 'export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2) && coverage run --source ./ --omit ./tests/server.py -m unittest tests' acme
+  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2)
+  - sudo coverage run --source ./ --omit ./tests/server.py -m unittest tests
 after_success:
   - coveralls
