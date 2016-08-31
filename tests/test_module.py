@@ -22,6 +22,7 @@ class TestModule(unittest.TestCase):
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
+            "--no-verify",
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
