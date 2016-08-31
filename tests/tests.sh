@@ -3,6 +3,7 @@ sudo apt-get -y install unzip nginx
 sudo mkdir -p /var/www/html/.well-known/acme-challenge
 sudo chown -R $(whoami):www-data /var/www/html/.well-known/
 sudo chmod -R 770 /var/www/html/.well-known
+cat /etc/issue
 sudo service nginx restart
 wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -O ngrok.zip
 unzip ngrok.zip ngrok

@@ -36,7 +36,6 @@ class TestModule(unittest.TestCase):
 
     def test_success_san(self):
         """ Successfully issue a certificate via subject alt name """
-        time.sleep(100)
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
