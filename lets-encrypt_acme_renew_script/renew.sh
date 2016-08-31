@@ -1,6 +1,6 @@
 #!/bin/bash
 #Author: TechnoMan, mail: git@frezbo.com
-tld="io" #set your domain extension, eg: com, edu, org etc
+tld="com" #set your domain extension, eg: com, edu, org etc
 days_to_expire=30
 document_root=/var/www/html # change to your document root
 scripts_directory=/usr/local/scripts # scripts directory
@@ -20,7 +20,7 @@ int_cert=${scripts_directory}/${acme_directory}/intermediate.pem
 curr_time=$(date +%s)
 touch ${scripts_directory}/${acme_directory}/.rnd
 export RANDFILE=${scripts_directory}/${acme_directory}/.rnd
-#check whether certifcate expires within 30 days
+#check whether certifcate expires within the days specified in days_to_expire
 for i in $(cat $domain_file)
         do
         for cert_type in {ec,rsa}
