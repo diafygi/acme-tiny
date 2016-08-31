@@ -1,6 +1,4 @@
-# acme-tiny
-
-[![Build Status](https://travis-ci.org/frezbo/acme-tiny.svg?branch=master)](https://travis-ci.org/frezbo/acme-tiny)
+# acme-tiny [![Build Status](https://travis-ci.org/frezbo/acme-tiny.svg?branch=master)](https://travis-ci.org/frezbo/acme-tiny) [![Coverage Status](https://coveralls.io/repos/github/frezbo/acme-tiny/badge.svg?branch=master)](https://coveralls.io/github/frezbo/acme-tiny?branch=master)
 
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has
