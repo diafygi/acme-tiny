@@ -1,2 +1,2 @@
-example.com
-mail.example.com
+domain
+subdomain.domain.com
