@@ -1,12 +1,14 @@
 #!/bin/bash
 #Author: TechnoMan, mail: git@frezbo.com
 tld="com" #set your domain extension, eg: com, edu, org etc
-days_to_expire=30
+days_to_expire=30 #certificates are renewed before a month of expiry
 document_root=/var/www/html # change to your document root
 scripts_directory=/usr/local/scripts # scripts directory
 acme_directory=acme-tiny/lets-encrypt_acme_renew_script
 nginx_config_location=/etc/nginx #change if this is not your config directory
 #certificate file location
+#private key file
+priv_key_file=priv.key
 certs_location=${nginx_config_location}/ssl/certs
 #domain keys location
 keys_location=${nginx_config_location}/ssl/private
@@ -27,7 +29,7 @@ for i in $(cat $domain_file)
                 do
                 if [ ! -e ${keys_location}/$i.$tld.$cert_type.key ]
                 then
-                        echo "$cert_type key file not found. Copy the $cert_type key file in domain.tld.$cert_type.key format as specified in README to ${keys_location}"
+                        echo "$cert_type key file not found. Copy the $cert_type key file in $i.$tld.$cert_type.key format as specified in README to ${keys_location}"
                 fi
                 if [ -e ${certs_location}/$i.$tld.$cert_type.crt ]
                 then
@@ -51,13 +53,13 @@ for i in $(cat $domain_file)
                                 mv ${certs_location}/$i.$tld.$cert_type.crt ${certs_location}/$i.$tld.$cert_type.crt.old
                                 mv ${keys_location}/$i.$tld.$cert_type.key ${keys_location}/$i.$tld.$cert_type.key.old
                                 mv ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.key ${keys_location}
-				python ${scripts_directory}/acme-tiny/acme_tiny.py --account-key ${scripts_directory}/${acme_directory}/priv.key --csr ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.csr --acme-dir ${document_root}/.well-known/acme-challenge > ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt
+				python ${scripts_directory}/acme-tiny/acme_tiny.py --account-key ${scripts_directory}/${acme_directory}/$priv_key_file --csr ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.csr --acme-dir ${document_root}/.well-known/acme-challenge > ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt
                                 cat ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt $int_cert > ${certs_location}/$i.$tld.$cert_type.crt
                                 rm -f ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt
                                 rm -f ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.csr
                         fi
                 else
-                        echo "$cert_type certificate file not found. Copy the $cert_type certificate file in domain.tld.$cert_type.crt format as specified in README to ${certs_location}"
+                        echo "$cert_type certificate file not found. Copy the $cert_type certificate file in $i.$tld.$cert_type.crt format as specified in README to ${certs_location}"
                 fi
         done
 done
