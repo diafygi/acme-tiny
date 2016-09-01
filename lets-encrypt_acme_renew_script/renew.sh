@@ -54,7 +54,7 @@ for i in $(cat $domain_file)
                                 mv ${keys_location}/$i.$tld.$cert_type.key ${keys_location}/$i.$tld.$cert_type.key.old
                                 mv ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.key ${keys_location}
 				python ${scripts_directory}/acme-tiny/acme_tiny.py --account-key ${scripts_directory}/${acme_directory}/$priv_key_file --csr ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.csr --acme-dir ${document_root}/.well-known/acme-challenge > ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt
-                                cat ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt $int_cert > ${certs_location}/$i.$tld.$cert_type.crt
+                                cat ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt ${scripts_directory}/${acme_directory}/$int_cert > ${certs_location}/$i.$tld.$cert_type.crt
                                 rm -f ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.tmp.crt
                                 rm -f ${scripts_directory}/${acme_directory}/$i.$tld.$cert_type.csr
                         fi
