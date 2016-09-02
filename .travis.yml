@@ -2,18 +2,23 @@ sudo: required
 dist: trusty
 language: python
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "nightly"
+- '2.7'
+- '3.3'
+- '3.4'
+- '3.5'
+- nightly
 before_install:
-  - chmod u+x ./tests/tests.sh
-  - ./tests/tests.sh
+- chmod u+x ./tests/tests.sh
+- "./tests/tests.sh"
 install:
-  - pip install -r tests/requirements.txt
+- pip install -r tests/requirements.txt
 script:
-  - export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head -1 | cut -d ":" -f2)
-  - coverage run --source ./ --omit ./tests/server.py -m unittest tests
+- export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head
+  -1 | cut -d ":" -f2)
+- coverage run --source ./ --omit ./tests/server.py -m unittest tests
 after_success:
-  - coveralls
+- coveralls
+- codeclimate-test-reporter --token $codeclimate_rep_token
+env:
+  matrix:
+    secure: pewmHFpvGCVxThitEphVTQX1BU1Gb/6kENxrJA0J0LbnBloaDprkP5UfgHHo7ayCOpd2oyvPTuGyUuSkXc2KLiTiG321IDdk7NAFk+Jq6eaBh3QL1GKoTzzSR8n8F+4kxFPbTc8P1x2A/MJ88F7LoJ95Ga8yzMnwt7cd+IyBvFJd2Nd3Rb9IQRlA8/u8HZCKB07MHZXVWrGySJdNeHAYKK0e3xJfFSmb10dmf+YDnfgSix336rR8CRaP02QZQ/B9iMNhJJGtQRpgdTCnfEnwO6uQ7h6Uj0FAD0HMX8T04n1ydXwePbZIltwTRhr8qjRR40cKrFPT+gqQtWkeXbjSQ0/XaEepSbkE2Ysi1Vdhn+TFWBcGGvo9oDRPqUmd6xMLaS3FWbPi2X1wSbPRWLM1uL7d8bvfeU8yelVycbvc9Z+QZkDyFP/W61NWOX/2uP1mWVyXkjzew9WgC3HSltvZa+pWtIlB4Qer58hNx+ndUwXQ0b6huQJg3HENpYeCa2rpKKAIiYetJ8FxLRNp6jTE66weZjfqiR9B5iQqKsUSYyDDrOmDWWGEkt6c7jq6U7R4wMXbofRwAqgGXM0dne3kdwCKWnqyBpfYUJR5ZNd4rPXJmvpfH+hPrgn53IXJFpyX1VctSWT+fK1WjdzwP0KpzjEeUkPiwQrnYcgbN/TOjyM=

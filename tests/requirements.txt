@@ -1,2 +1,3 @@
 coveralls
+codeclimate-test-reporter
 argparse
