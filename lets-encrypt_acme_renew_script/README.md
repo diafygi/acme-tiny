@@ -3,7 +3,7 @@
 
 ## Setup
 
-### Assumes that the server has already been configured with an SSL certifciate as per the README in acme-tiny
+### Assumes that the server has already been configured with nginx with SSL as per the README in acme-tiny
 
 1. Download the server_setup.sh script: 
 ```
