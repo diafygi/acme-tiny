@@ -82,7 +82,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": requests.head('https://acme-v01.api.letsencrypt.org/terms', allow_redirects=False).headers['location'],
+        "agreement": requests.head(CA + '/terms', allow_redirects=False).headers['location'],
     })
     if code == 201:
         log.info("Registered!")
