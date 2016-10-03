@@ -19,7 +19,7 @@ service apache2 restart
 
 ```
 
-####renew ssl every month   renew_cert.sh
+####renew ssl every month: renew_cert.sh
 
 ```
 
@@ -41,7 +41,8 @@ service apache2 reload
 
 
 
-####Apache2 conf settings, if you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
+####Apache2 conf settings:
+####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
 
 
 
