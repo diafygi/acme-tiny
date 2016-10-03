@@ -15,6 +15,27 @@ a2enmod headers
 
 ```
 
+renew ssl every month   renew_cert.sh
+
+```
+
+#!/usr/bin/sh
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /home/martnyc/public_html/challenges/ > ./signed.crt || exit
+wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > lets-encrypt-x3-cross-signed.pem
+service apache2 reload
+
+```
+
+crontab -e
+
+```
+0 0 1 * * /usr/local/etc/apache/keys/renew_cert.sh 2>> /var/log/acme_tiny.log
+
+
+```
+
+
+
 
 Apache2 conf settings:
 
