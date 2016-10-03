@@ -46,8 +46,8 @@ Apache2 conf settings:
    ServerName www.yoursite.com
    ServerAlias yoursite.com
 
-   Alias /.well-known/acme-challenge/ /usr/local/www/apache24/letsencrypt-challenges/
-   <Directory /usr/local/www/apache24/letsencrypt-challenges>
+   Alias /.well-known/acme-challenge/ /home/xxxxxxx/public_html/challenges/
+   <Directory /home/xxxxxxx/public_html/challenges/>
       AllowOverride None
       Require all granted
       Satisfy Any
