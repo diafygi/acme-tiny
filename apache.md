@@ -2,6 +2,8 @@ https://github.com/diafygi/acme-tiny/issues/79
 
 commands used in setting up the ssl, system ubuntu 14.04 + virtualmin + apache2:
 
+
+```
 openssl genrsa 4096 > account.key
 openssl genrsa 4096 > domain.key
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:xxxxxx.com,DNS:www.xxxxxx.com")) > domain.csr
@@ -11,11 +13,10 @@ python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /h
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > lets-encrypt-x3-cross-signed.pem
 a2enmod headers
 
+```
 
 
-
-
-
+Apache2 conf settings:
 
 
 
