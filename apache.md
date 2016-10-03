@@ -42,7 +42,7 @@ service apache2 reload
 
 
 ####Apache2 conf settings:
-####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's:
+#####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's:
 
 
 
@@ -84,4 +84,10 @@ service apache2 reload
    # rest of your SSL/TLS config
    # DocumentRoot, ErrorLog, CustomLog...
 </VirtualHost>
+```
+#####Forward http request to https:
+#####Add following line into the prot 80 section in the conf file
+```
+RewriteRule ^/(.*):80$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
+
 ```
