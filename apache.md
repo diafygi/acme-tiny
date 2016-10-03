@@ -15,6 +15,7 @@ wget -O - https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.p
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /home/xxxxxx/public_html/challenges/ > ./signed.crt
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > lets-encrypt-x3-cross-signed.pem
 a2enmod headers
+service apache2 restart
 
 ```
 
