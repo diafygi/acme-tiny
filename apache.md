@@ -42,7 +42,7 @@ service apache2 reload
 
 
 ####Apache2 conf settings:
-####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
+####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's:
 
 
 
