@@ -1,4 +1,4 @@
-Apache setting, get hints from the following link:
+Apache setting with latest lets-encrypt-x3-cross-signed.pem, get hints from the following link:
 
 https://github.com/diafygi/acme-tiny/issues/79
 
