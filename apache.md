@@ -23,7 +23,7 @@ https://github.com/diafygi/acme-tiny/issues/79
    ServerAlias yoursite.com
 
    SSLEngine On
-   SSLCertificateFile "/usr/local/etc/apache24/keys/domain.crt"
+   SSLCertificateFile "/usr/local/etc/apache24/keys/signed.crt"
    SSLCertificateKeyFile "/usr/local/etc/apache24/keys/domain.key"
    # CA certificate from https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem
    SSLCertificateChainFile "/usr/local/etc/apache24/keys/lets-encrypt-x1-cross-signed.pem"
