@@ -39,7 +39,7 @@ crontab -e
 
 
 
-Apache2 conf settings:
+Apache2 conf settings, if you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
 
 
 
