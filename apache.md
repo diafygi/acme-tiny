@@ -1,8 +1,9 @@
-###Apache setting with latest lets-encrypt-x3-cross-signed.pem, get hints from the following link:
+###Apache setting with latest lets-encrypt-x3-cross-signed.pem, 
+###Got hints from the following link:
 
 https://github.com/diafygi/acme-tiny/issues/79
 
-###commands used in setting up the ssl, system ubuntu 14.04 + virtualmin + apache2:
+####commands used in setting up the ssl, system ubuntu 14.04 + virtualmin + apache2:
 
 
 ```
@@ -17,7 +18,7 @@ a2enmod headers
 
 ```
 
-###renew ssl every month   renew_cert.sh
+####renew ssl every month   renew_cert.sh
 
 ```
 
@@ -28,7 +29,7 @@ service apache2 reload
 
 ```
 
-###crontab -e
+####crontab -e
 
 ```
 0 0 1 * * /usr/local/etc/apache/keys/renew_cert.sh 2>> /var/log/acme_tiny.log
@@ -39,7 +40,7 @@ service apache2 reload
 
 
 
-###Apache2 conf settings, if you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
+####Apache2 conf settings, if you do not have the rest of config for 443, then just copy 80's rest of config  to 443's is fine:
 
 
 
