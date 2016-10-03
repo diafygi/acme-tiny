@@ -1,4 +1,4 @@
-<code>
+```
 <VirtualHost *:80>
    ServerName www.yoursite.com
    ServerAlias yoursite.com
@@ -36,5 +36,4 @@
    # rest of your SSL/TLS config
    # DocumentRoot, ErrorLog, CustomLog...
 </VirtualHost>
-
-</code>
+```
