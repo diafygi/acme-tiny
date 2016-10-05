@@ -106,3 +106,4 @@ service apache2 reload
 RewriteRule ^/(.*):80$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
 
 ```
+#####If you have old ssl setting in the 443 part, then delete them first
