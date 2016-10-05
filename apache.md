@@ -14,7 +14,7 @@ mkdir -p /home/xxxxxxx/public_html/challenges/
 wget -O - https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py > acme_tiny.py
 ```
 
-####before get certificate signed, we need following config into apache2's http setup:
+####before get certificate signed, we need following config into apache2's http(port 80's setup) setup:
 ```
    Alias /.well-known/acme-challenge/ /home/xxxxxxx/public_html/challenges/
    <Directory /home/xxxxxxx/public_html/challenges/>
