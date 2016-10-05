@@ -12,6 +12,21 @@ openssl genrsa 4096 > domain.key
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:xxxxxx.com,DNS:www.xxxxxx.com")) > domain.csr
 mkdir -p /home/xxxxxxx/public_html/challenges/
 wget -O - https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py > acme_tiny.py
+```
+
+####before get certificate signed, we need following config into apache2's http setup:
+```
+   Alias /.well-known/acme-challenge/ /home/xxxxxxx/public_html/challenges/
+   <Directory /home/xxxxxxx/public_html/challenges/>
+      AllowOverride None
+      Require all granted
+      Satisfy Any
+   </Directory>
+```
+
+####then we need restart apache2 and get certificate signed:
+```
+service apache2 restart
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /home/xxxxxx/public_html/challenges/ > ./signed.crt
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > lets-encrypt-x3-cross-signed.pem
 a2enmod headers
