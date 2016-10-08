@@ -36,6 +36,12 @@ service apache2 restart
 
 ####renew ssl every month: renew_cert.sh
 
+
+```
+nano renew_cert.sh
+
+```
+
 ```
 
 #!/usr/bin/sh
