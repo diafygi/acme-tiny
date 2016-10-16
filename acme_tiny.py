@@ -2,8 +2,9 @@
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen # Python 3
+    from urllib.error import HTTPError
 except ImportError:
-    from urllib2 import urlopen # Python 2
+    from urllib2 import urlopen, HTTPError # Python 2
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -58,8 +59,8 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         try:
             resp = urlopen(url, data.encode('utf8'))
             return resp.getcode(), resp.read()
-        except IOError as e:
-            return getattr(e, "code", None), getattr(e, "read", e.__str__)()
+        except HTTPError as httperror:
+            return httperror.getcode(), httperror.read()
 
     # find domains
     log.info("Parsing CSR...")
