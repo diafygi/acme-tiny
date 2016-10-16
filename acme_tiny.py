@@ -2,8 +2,9 @@
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen # Python 3
+	from urllib.error import URLError, HTTPError
 except ImportError:
-    from urllib2 import urlopen # Python 2
+	from urllib2 import urlopen, URLError, HTTPError
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -59,7 +60,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         try:
             resp = urlopen(url, signed_request.encode("utf8"))
             code, result = resp.getcode(), resp.read()
-        except IOError as e:
+        except (HTTPError, URLError) as e:
             code, result = getattr(e, "code", None), getattr(e, "read", e.reason.__str__)()
         finally:
             try:
