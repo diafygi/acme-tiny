@@ -44,12 +44,24 @@ nano renew_cert.sh
 
 ```
 
-#!/usr/bin/sh
+#!/bin/sh
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /home/xxxxxx/public_html/challenges/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > lets-encrypt-x3-cross-signed.pem
 service apache2 reload
 
 ```
+
+####make renew_cert.sh executable
+
+```
+chmod +x renew_cert.sh
+```
+####test executing renew_cert.sh to see if there is any errors
+
+```
+./renew_cert.sh
+```
+
 
 ####crontab -e
 
