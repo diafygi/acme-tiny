@@ -104,7 +104,7 @@ def get_crt(account_key, csr, acme_dir, verifychallenge, log=LOGGER, CA=DEFAULT_
             raise ValueError("Error requesting challenges: {0} {1}".format(code, result))
 
         # make the challenge file
-        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"[0]
+        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01" or c['status'] == "valid"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
         wellknown_path = os.path.join(acme_dir, token)
