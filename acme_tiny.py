@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
-    from urllib.request import urlopen # Python 3
-except ImportError:
-    from urllib2 import urlopen # Python 2
+    from urllib.request import Request, urlopen  # Python 3
+except:
+    from urllib2 import Request, urlopen  # Python 2
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+USER_AGENT = 'acme-tiny // https://github.com/diafygi/acme-tiny'
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
@@ -44,7 +45,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     def _send_signed_request(url, payload):
         payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
+        q = Request(CA + "/directory")
+        q.add_header('User-Agent', USER_AGENT)
+        protected["nonce"] = urlopen(q).info().get('Replay-Nonce')
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -56,7 +59,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             "payload": payload64, "signature": _b64(out),
         })
         try:
-            resp = urlopen(url, data.encode('utf8'))
+            q = Request(url)
+            q.add_header('User-Agent', USER_AGENT)
+            resp = urlopen(q, data.encode('utf8'))
             return resp.getcode(), resp.read()
         except IOError as e:
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
@@ -114,8 +119,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         # check that the file is in place
         wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
+            q = Request(wellknown_url)
+            q.add_header('User-Agent', USER_AGENT)
+            resp = urlopen(q).read().decode('utf8').strip()
             assert resp_data == keyauthorization
         except (IOError, AssertionError):
             os.remove(wellknown_path)
@@ -133,7 +139,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         # wait for challenge to be verified
         while True:
             try:
-                resp = urlopen(challenge['uri'])
+                q = Request(challenge['uri'])
+                q.add_header('User-Agent', USER_AGENT)
+                resp = urlopen(q)
                 challenge_status = json.loads(resp.read().decode('utf8'))
             except IOError as e:
                 raise ValueError("Error checking challenge: {0} {1}".format(
