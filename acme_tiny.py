@@ -121,7 +121,8 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         try:
             q = Request(wellknown_url)
             q.add_header('User-Agent', USER_AGENT)
-            resp = urlopen(q).read().decode('utf8').strip()
+            resp = urlopen(q)
+            resp_data = resp.read().decode('utf8').strip()
             assert resp_data == keyauthorization
         except (IOError, AssertionError):
             os.remove(wellknown_path)
