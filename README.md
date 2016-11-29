@@ -184,6 +184,50 @@ service nginx reload
 0 0 1 * * /path/to/renew_cert.sh 2>> /var/log/acme_tiny.log
 ```
 
+#### Alternative: Use systemd-service and timer
+
+* Move `letsencrypt@.service` and `letsencrypt@.timer` to `/etc/systemd/system/`
+* Modify environment-variables, path to `letsencrypt_renew.sh` and run-user.
+(`LE_ROOT` should contain the csr-files for your domains)
+* Test the script first: `systemctl start letsencrypt@domain.tld`. If the service ran correctly, your can find your (chained) cert at `$LE_ROOT/domain.tld.pem`
+* Enable and start the timer: `systemctl enable letsencrypt@domain.tld.timer; systemctl start letsencrypt@domain.tld.timer`
+
+`letsencrypt@.service`
+```
+[Unit]
+Description=Renews your LetsEncrypt-certificate
+After=network.target
+
+[Service]
+User=letsencrypt
+Environment=ACCOUNT_KEY=/path/to/account.key ACME_DIR=/var/www/challenges/ LE_ROOT=/usr/share/letsencrypt
+ExecStart=/path/to/letsencrypt_renew.sh %i
+Type=oneshot
+```
+
+`letsencrypt@.timer`
+```
+[Unit]
+Description=Renews your LetsEncrypt-certificates every month
+
+[Timer]
+Persistent=true
+OnCalendar=monthly
+
+[Install]
+WantedBy=timers.target
+```
+
+slightly modified `letsencrypt_renew.sh`
+```
+#!/usr/bin/sh
+cd $LE_ROOT
+python acme_tiny.py --account-key $ACCOUNT_KEY --csr $1.csr --acme-dir $ACME_DIR > temp.crt || exit
+wget -O - https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem > intermediate.pem
+cat temp.crt intermediate.pem > $1.pem
+rm temp.crt
+```
+
 ## Permissions
 
 The biggest problem you'll likely come across while setting up and running this
