@@ -122,7 +122,7 @@ python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /v
 ### Step 5: Install the certificate
 
 The signed https certificate that is output by this script can be used along
-with your private key to run an https server. You need to include them in the
+with your private key to run a https server. You need to include them in the
 https settings in your web server's configuration. Here's an example on how to
 configure an nginx server:
 
