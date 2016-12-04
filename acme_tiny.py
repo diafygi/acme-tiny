@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, ssl
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -44,7 +44,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     def _send_signed_request(url, payload):
         payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
+        protected["nonce"] = urlopen(CA + "/directory", context=ssl.create_default_context()).headers['Replay-Nonce']
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -56,7 +56,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             "payload": payload64, "signature": _b64(out),
         })
         try:
-            resp = urlopen(url, data.encode('utf8'))
+            resp = urlopen(url, data.encode('utf8'), context=ssl.create_default_context())
             return resp.getcode(), resp.read()
         except IOError as e:
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
@@ -133,7 +133,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         # wait for challenge to be verified
         while True:
             try:
-                resp = urlopen(challenge['uri'])
+                resp = urlopen(challenge['uri'], context=ssl.create_default_context())
                 challenge_status = json.loads(resp.read().decode('utf8'))
             except IOError as e:
                 raise ValueError("Error checking challenge: {0} {1}".format(
