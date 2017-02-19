@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA, challenge_helper="tee", challenge_helper_remove="rm"):
+def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA, challenge_helper="tee", challenge_helper_remove="rm", challenge_type="http-01"):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -104,10 +104,13 @@ def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA, challenge_helper="tee",
             raise ValueError("Error requesting challenges: {0} {1}".format(code, result))
 
         # make the challenge file
-        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
+        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == challenge_type][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
-        challenge_value = keyauthorization
+        if challenge_type == 'dns-01':
+            challenge_value = _b64(hashlib.sha256(keyauthorization.encode("utf8")).digest())
+        else:
+            challenge_value = keyauthorization
         env = os.environ.copy()
         env['DOMAIN'] = domain
         proc = subprocess.Popen([challenge_helper, token], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env)
@@ -185,6 +188,7 @@ def main(argv):
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
     parser.add_argument("--challenge-helper", default="tee", help="challenge helper, default is tee")
     parser.add_argument("--challenge-helper-remove", default="rm", help="challenge helper remove, default is rm")
+    parser.add_argument("--challenge-type", default="http-01", help="challenge type, default is http-01")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
@@ -194,7 +198,8 @@ def main(argv):
         log=LOGGER,
         CA=args.ca,
         challenge_helper=args.challenge_helper,
-        challenge_helper_remove=args.challenge_helper_remove
+        challenge_helper_remove=args.challenge_helper_remove,
+        challenge_type=args.challenge_type
     )
     sys.stdout.write(signed_crt)
 
