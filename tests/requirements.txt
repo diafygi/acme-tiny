@@ -1,3 +1,2 @@
 coveralls
-fusepy
 argparse

@@ -4,8 +4,13 @@ try:
     from StringIO import StringIO # Python 2
 except ImportError:
     from io import StringIO # Python 3
+try:
+    from urllib.request import urlopen # Python 3
+except ImportError:
+    from urllib2 import urlopen # Python 2
 
 import acme_tiny
+import writecheck, removecheck
 from .monkey import gen_keys
 
 KEYS = gen_keys()
@@ -16,11 +21,8 @@ class TestModule(unittest.TestCase):
     def setUp(self):
         self.CA = "https://acme-staging.api.letsencrypt.org"
         self.tempdir = tempfile.mkdtemp()
-        self.fuse_proc = Popen(["python", "tests/monkey.py", self.tempdir])
 
     def tearDown(self):
-        self.fuse_proc.terminate()
-        self.fuse_proc.wait()
         os.rmdir(self.tempdir)
 
     def test_success_cn(self):
@@ -30,8 +32,9 @@ class TestModule(unittest.TestCase):
         result = acme_tiny.main([
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
-            "--acme-dir", self.tempdir,
             "--ca", self.CA,
+            "--challenge-helper", "tests/monkey.py",
+            "--challenge-helper-remove", "true",
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
@@ -47,8 +50,9 @@ class TestModule(unittest.TestCase):
         result = acme_tiny.main([
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['san_csr'].name,
-            "--acme-dir", self.tempdir,
             "--ca", self.CA,
+            "--challenge-helper", "tests/monkey.py",
+            "--challenge-helper-remove", "true",
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
@@ -63,8 +67,9 @@ class TestModule(unittest.TestCase):
             "python", "acme_tiny.py",
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
-            "--acme-dir", self.tempdir,
             "--ca", self.CA,
+            "--challenge-helper", "tests/monkey.py",
+            "--challenge-helper-remove", "true",
         ], stdout=PIPE, stderr=PIPE).communicate()
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
             stdout=PIPE, stderr=PIPE).communicate(crt)
@@ -76,8 +81,9 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", "/foo/bar",
                 "--csr", KEYS['domain_csr'].name,
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
@@ -90,8 +96,9 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", KEYS['account_key'].name,
                 "--csr", "/foo/bar",
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
@@ -104,8 +111,9 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", KEYS['weak_key'].name,
                 "--csr", KEYS['domain_csr'].name,
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
@@ -118,8 +126,9 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['invalid_csr'].name,
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
@@ -132,13 +141,14 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['nonexistent_csr'].name,
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
-        self.assertIn("but couldn't download", result.args[0])
+        self.assertIn("404.gethttpsforfree.com challenge did not pass", result.args[0])
 
     def test_account_key_domain(self):
         """ Can't use the account key for the CSR """
@@ -146,11 +156,25 @@ class TestModule(unittest.TestCase):
             result = acme_tiny.main([
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['account_csr'].name,
-                "--acme-dir", self.tempdir,
                 "--ca", self.CA,
+                "--challenge-helper", "tests/monkey.py",
+                "--challenge-helper-remove", "true",
             ])
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
         self.assertIn("Certificate public key must be different than account key", result.args[0])
+
+    def test_write_remove_check(self):
+        """ Test writecheck script """
+        urlopen("http://{0}/.well-known/acme-challenge/?{1}".format(
+            os.getenv("TRAVIS_DOMAIN", "not_set"),
+            os.getenv("TRAVIS_SESSION", "not_set")), "testtoken")
+        os.environ['WEBROOT'] = tempfile.mkdtemp()
+        os.environ['DOMAIN'] = os.getenv("TRAVIS_DOMAIN", "not_set")
+        stdin = sys.stdin
+        sys.stdin = StringIO("testtoken")
+        writecheck.main("testtoken")
+        sys.stdin = stdin
+        removecheck.main("testtoken")
 
