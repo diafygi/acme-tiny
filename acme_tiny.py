@@ -41,10 +41,17 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     thumbprint = _b64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
 
     # helper function make signed requests
-    def _send_signed_request(url, payload):
+    def _send_signed_request(url_or_key, payload):
         payload64 = _b64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
+        directory_request = urlopen(CA + "/directory")
+        directory_data = json.loads(directory_request.read().decode('utf8'))
+        if url_or_key in directory_data:
+          # Use the URL from the /directory response
+          url = directory_data[url_or_key]
+        else:
+          url = url_or_key
+        protected["nonce"] = directory_request.headers['Replay-Nonce']
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -80,7 +87,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     # get the certificate domains and expiration
     log.info("Registering account...")
-    code, result = _send_signed_request(CA + "/acme/new-reg", {
+    code, result = _send_signed_request("new-reg", {
         "resource": "new-reg",
         "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
     })
@@ -96,7 +103,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         log.info("Verifying {0}...".format(domain))
 
         # get new challenge
-        code, result = _send_signed_request(CA + "/acme/new-authz", {
+        code, result = _send_signed_request("new-authz", {
             "resource": "new-authz",
             "identifier": {"type": "dns", "value": domain},
         })
@@ -153,7 +160,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
+    code, result = _send_signed_request("new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
     })
