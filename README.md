@@ -72,10 +72,7 @@ openssl genrsa 4096 > domain.key
 ```
 
 ```
-#for a single domain
-openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
-
-#for multiple domains (use this one if you want both www.yoursite.com and yoursite.com)
+#generate csr for domains www.yoursite.com and yoursite.com. It is also posible to just list a single domain
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com")) > domain.csr
 ```
 
