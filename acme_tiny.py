@@ -194,5 +194,18 @@ def main(argv):
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
+def __check_deps():
+    # check runtime dependencies (openssl command only)
+    stat, out = subprocess.getstatusoutput("openssl version")
+    if stat != 0:
+        sys.stderr.write(out)
+        sys.stderr.write('\n')
+        sys.exit(stat)
+
+def __entry_point():
+    # needed for setuptools support (see setup.py file)
+    __check_deps()
+    main(sys.argv[1:])
+
 if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])
