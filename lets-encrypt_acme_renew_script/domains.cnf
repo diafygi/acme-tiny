@@ -1,0 +1,16 @@
+[req]
+prompt = no
+distinguished_name = dn
+req_extensions = ext
+
+[dn]
+CN = __DOMAIN__
+emailAddress = mail@domain.com
+O = <your-organization>
+C = <country-code>
+L = <location>
+ST = <state>
+
+[ext]
+subjectAltName = DNS:www.__DOMAIN__,DNS:__DOMAIN__
+

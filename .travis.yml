@@ -2,17 +2,23 @@ sudo: required
 dist: trusty
 language: python
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "nightly"
+- '2.7'
+- '3.3'
+- '3.4'
+- '3.5'
+- nightly
 before_install:
-  - sudo apt-get install fuse
-  - sudo chmod a+r /etc/fuse.conf
+- chmod u+x ./tests/tests.sh
+- "./tests/tests.sh"
 install:
-  - pip install -r tests/requirements.txt
+- pip install -r tests/requirements.txt
 script:
-  - coverage run --source ./ --omit ./tests/server.py -m unittest tests
+- export TRAVIS_DOMAIN=$(grep -Eoi "hostname:[A-za-z0-9]+.ngrok.io" url.log| head
+  -1 | cut -d ":" -f2)
+- coverage run --source ./ --omit ./tests/server.py -m unittest tests
 after_success:
-  - coveralls
+- coveralls
+- codeclimate-test-reporter
+env:
+  global:
+    secure: aBBxGeWFRSvI+9Gi6VFnNZyiXQCtS9VYugMGcJoG+kYYa9D1Q79Ecq2bwRmbd2dK9S1rRmixP1m94HknS0unls3nlVCc/nacR6LwrRfUTJmSP7/8T5T6AX4yxZ/Dzr0Tw3GjpS/Lw8k3qirc9KT5W0jFYkEAhojwproxKqEFQ+XtXlgHRjtuYHkL/t6MTuXdd1cyvZo4SuFJehebh3/OamIBmYKbivlB/5GxJIbaZws0JkUwFeuoFSSbCc5PIHZGltlJRZNPOcrhW0AATAFb9FedxCa3TEMm3SAMkRcKZdsnPghqEX0hncTSThYsg+w44sDuyWYO0wnFAwThxNyOJ3NADeycmOmPgUd0MQHHTt9aqRWEXm/crxEARl8EB9Zy6PgkQlGEiBP8yPqNBOJtyWpm/oUmBqLMcsrkqDjBDzVMLL8Rv7vvzgssAfCJEP43LPsjoaKCooZ4qBqAJvCR718YjFcdGSIFr2Wj2ZZ47KxkTad1JV8aRalfOS/X+oaXLorEiOoG2kt934duBemEbSvX1Dwol0fV0Klg1mzezNULsAH48tmGbmKjkGcqwzFh76lpRW9eFLqN7NuQ3ZjwE2gPO/gRmCXDOfFYzsvsb814otgFfUdTEbxmPgDE0FZWnD/Um8t5ClfsD3yRsBz3xTHIjT6wwkQoX9A9FRSht2g=

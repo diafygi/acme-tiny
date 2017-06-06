@@ -1,7 +1,4 @@
-# acme-tiny
-
-[![Build Status](https://travis-ci.org/diafygi/acme-tiny.svg)](https://travis-ci.org/diafygi/acme-tiny)
-[![Coverage Status](https://coveralls.io/repos/diafygi/acme-tiny/badge.svg?branch=master&service=github)](https://coveralls.io/github/diafygi/acme-tiny?branch=master)
+# acme-tiny [![Build Status](https://travis-ci.org/frezbo/acme-tiny.svg?branch=master)](https://travis-ci.org/frezbo/acme-tiny) [![Coverage Status](https://coveralls.io/repos/github/frezbo/acme-tiny/badge.svg?branch=master)](https://coveralls.io/github/frezbo/acme-tiny?branch=master) [![Code Climate](https://codeclimate.com/github/frezbo/acme-tiny/badges/gpa.svg)](https://codeclimate.com/github/frezbo/acme-tiny) [![Test Coverage](https://codeclimate.com/github/frezbo/acme-tiny/badges/coverage.svg)](https://codeclimate.com/github/frezbo/acme-tiny/coverage) [![Issue Count](https://codeclimate.com/github/frezbo/acme-tiny/badges/issue_count.svg)](https://codeclimate.com/github/frezbo/acme-tiny) 
 
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has
@@ -68,7 +65,13 @@ you can't use your account private key as your domain private key!
 
 ```
 #generate a domain private key (if you haven't already)
-openssl genrsa 4096 > domain.key
+
+For rsa key
+`openssl genrsa 4096 > domain.key`
+
+For ec key
+
+`openssl ecparam -genkey -name secp384r1 | openssl ec -out domain.key`
 ```
 
 ```
@@ -209,3 +212,5 @@ anyone who wants to run it.
 
 If you want to add features for your own setup to make things easier for you,
 please do! It's open source, so feel free to fork it and modify as necessary.
+
+Any help regarding adding dns-01 challenge validation to the python script is appreciated

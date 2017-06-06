@@ -15,13 +15,7 @@ class TestModule(unittest.TestCase):
 
     def setUp(self):
         self.CA = "https://acme-staging.api.letsencrypt.org"
-        self.tempdir = tempfile.mkdtemp()
-        self.fuse_proc = Popen(["python", "tests/monkey.py", self.tempdir])
-
-    def tearDown(self):
-        self.fuse_proc.terminate()
-        self.fuse_proc.wait()
-        os.rmdir(self.tempdir)
+        self.tempdir = "/var/www/html/.well-known/acme-challenge"
 
     def test_success_cn(self):
         """ Successfully issue a certificate via common name """
