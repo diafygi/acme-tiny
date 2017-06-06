@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, shutil, tempfile, textwrap, logging
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -175,11 +175,11 @@ def main(argv):
             only ~200 lines, so it won't take long.
 
             ===Example Usage===
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed.crt
+            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ --output signed.crt
             ===================
 
             ===Example Crontab Renewal (once per month)===
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed.crt 2>> /var/log/acme_tiny.log
+            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ --output /path/to/signed.crt &> /var/log/acme_tiny.log
             ==============================================
             """)
     )
@@ -188,11 +188,19 @@ def main(argv):
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--output", "-o", metavar="FILE", default=None, help="output file, default is standard output")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
-    sys.stdout.write(signed_crt)
+    if args.output:
+        dirname, basename = os.path.split(args.output)
+        with tempfile.NamedTemporaryFile(prefix=basename, dir=dirname, delete=False) as f:
+            f.write(signed_crt)
+            f.close()
+            shutil.move(f.name, args.output)
+    else:
+        sys.stdout.write(signed_crt) 
 
 if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])
