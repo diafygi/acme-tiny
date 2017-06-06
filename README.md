@@ -108,6 +108,19 @@ server {
 }
 ```
 
+```httpd
+#example for httpd (OpenBSD default)
+server "default" {
+        root "/var/www/htdocs/"
+        listen on $IP4 port 80
+    
+        location "/.well-known/*"    {
+        directory auto index
+        }
+         ...the rest of your config
+}
+```
+
 ### Step 4: Get a signed certificate!
 
 Now that you have setup your server and generated all the needed files, run this
