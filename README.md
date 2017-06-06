@@ -33,7 +33,7 @@ To accomplish this you need to initially create a key, that can be used by
 acme-tiny, to register a account for you and sign all following requests.
 
 ```
-openssl genrsa 4096 > account.key
+( umask 027 && openssl genrsa 4096 > account.key )
 ```
 
 #### Use existing Let's Encrypt key
@@ -68,7 +68,7 @@ you can't use your account private key as your domain private key!
 
 ```
 #generate a domain private key (if you haven't already)
-openssl genrsa 4096 > domain.key
+( umask 027 && openssl genrsa 4096 > domain.key )
 ```
 
 ```
@@ -199,6 +199,37 @@ reload your webserver without having permission to do anything else.
 * Backup your account private key (e.g. `account.key`)
 * Don't allow this script to be able to read your domain private key!
 * Don't allow this script to be run as root!
+
+### Example user setup
+
+```
+# create 'acme' user which will run the script
+useradd acme -d /etc/ssl/acme/ -m
+
+# challenges folder writable for the script, readable for the web server
+mkdir /var/www/challenges/
+chown acme:www-data /var/www/challenges/
+chmod 750 /var/www/challenges/
+
+# create an account key readable only by the script
+( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/account.key )
+chown acme:acme /etc/ssl/acme/account.key
+
+# create domain key readable only by the application's user or group
+# for example `root:www-data` for Debian-packaged web servers
+( umask 027 && openssl genrsa 4096 > /etc/ssl/acme/domain.key )
+chown root:www-data /etc/ssl/acme/domain.key
+
+# generate your certificate requests
+openssl req ... > /etc/ssl/acme/domain.csr
+chown acme:acme /etc/ssl/acme/domain.csr
+
+# request your certificate(s)
+sudo -u acme -H python acme_tiny.py --account-key /etc/ssl/acme/account.key --csr /etc/ssl/acme/domain.csr --acme-dir /var/www/challenges/ > /etc/ssl/acme/signed.crt
+chown acme:acme /etc/ssl/acme/signed.crt
+```
+
+Now point your application's configuration to `/etc/ssl/acme/signed.crt`.
 
 ## Feedback/Contributing
 
