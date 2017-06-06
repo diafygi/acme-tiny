@@ -110,7 +110,7 @@ class TestModule(unittest.TestCase):
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
-        self.assertIn("Key too small", result.args[0])
+        self.assertIn("key too small", result.args[0].lower())
 
     def test_invalid_domain(self):
         """ Let's Encrypt rejects invalid domains """
