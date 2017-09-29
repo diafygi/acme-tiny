@@ -11,7 +11,7 @@ def app(req, resp):
             body = req['wsgi.input'].read(body_len).decode("utf8")
             body = re.sub(r"[^A-Za-z0-9_\-\.]", "_", body)
             KEY_AUTHORIZATION['uri'] = "/{0}".format(body.split(".", 1)[0])
-            KEY_AUTHORIZATION['body'] = body
+            KEY_AUTHORIZATION['data'] = body
             resp('201 Created', [])
             return ["".encode("utf8")]
         else:

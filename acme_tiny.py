@@ -69,7 +69,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, skip_verify=F
     if proc.returncode != 0:
         raise IOError("Error loading {0}: {1}".format(csr, err))
     domains = set([])
-    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
+    common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
         domains.add(common_name.group(1))
     subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE|re.DOTALL)
@@ -82,7 +82,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, skip_verify=F
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
+        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
     })
     if code == 201:
         log.info("Registered!")
