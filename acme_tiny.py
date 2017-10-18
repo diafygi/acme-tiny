@@ -195,10 +195,12 @@ def main(argv):
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--skip-well-known-check", action="store_true", help="Skip the local http check of .well-knonw/acme-challenge/")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    WellKnownCheck = not args.skip_well_known_check
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, WellKnownCheck=WellKnownCheck)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
