@@ -1,9 +1,9 @@
-###Apache setting with latest lets-encrypt-x3-cross-signed.pem, 
-###Got hints from the following link:
+### Apache setting with latest lets-encrypt-x3-cross-signed.pem, 
+### Got hints from the following link:
 
 https://github.com/diafygi/acme-tiny/issues/79
 
-####commands used in setting up the ssl, system: ubuntu 14.04 + virtualmin + apache2:
+#### commands used in setting up the ssl, system: ubuntu 14.04 + virtualmin + apache2:
 
 
 ```
@@ -14,7 +14,7 @@ mkdir -p /home/xxxxxxx/public_html/challenges/
 wget -O - https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py > acme_tiny.py
 ```
 
-####before get certificate signed, we need following config into apache2's http(port 80's setup) setup:
+#### before get certificate signed, we need following config into apache2's http(port 80's setup) setup:
 ```
    Alias /.well-known/acme-challenge/ /home/xxxxxxx/public_html/challenges/
    <Directory /home/xxxxxxx/public_html/challenges/>
@@ -24,7 +24,7 @@ wget -O - https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.p
    </Directory>
 ```
 
-####then we need restart apache2 and get certificate signed:
+#### then we need restart apache2 and get certificate signed:
 ```
 service apache2 restart
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /home/xxxxxx/public_html/challenges/ > ./signed.crt
@@ -34,7 +34,7 @@ service apache2 restart
 
 ```
 
-####renew ssl every month: renew_cert.sh
+#### renew ssl every month: renew_cert.sh
 
 
 ```
@@ -51,19 +51,19 @@ service apache2 reload
 
 ```
 
-####make renew_cert.sh executable
+#### make renew_cert.sh executable
 
 ```
 chmod +x renew_cert.sh
 ```
-####test executing renew_cert.sh to see if there is any errors
+#### test executing renew_cert.sh to see if there is any errors
 
 ```
 ./renew_cert.sh
 ```
 
 
-####crontab -e
+#### crontab -e
 
 ```
 0 0 1 * * /usr/local/etc/apache/keys/renew_cert.sh 2>> /var/log/acme_tiny.log
@@ -74,8 +74,8 @@ chmod +x renew_cert.sh
 
 
 
-####Apache2 conf settings:
-#####If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's:
+#### Apache2 conf settings:
+##### If you do not have the rest of config for 443, then just copy 80's rest of config  to 443's:
 
 
 
@@ -118,10 +118,10 @@ chmod +x renew_cert.sh
    # DocumentRoot, ErrorLog, CustomLog...
 </VirtualHost>
 ```
-#####Forward http request to https:
-#####Add following line into the prot 80 section in the conf file
+##### Forward http request to https:
+##### Add following line into the prot 80 section in the conf file
 ```
 RewriteRule ^/(.*):80$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
 
 ```
-#####If you have old ssl setting in the 443 part, then delete them first
+##### If you have old ssl setting in the 443 part, then delete them first
