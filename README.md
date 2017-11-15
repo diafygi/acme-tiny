@@ -119,6 +119,10 @@ and read your private account key and CSR.
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed.crt
 ```
 
+Note: if you are running behind a firewall in a local address space there is a good chance that the local http check of 
+the `.well-known/acme-challenge/` URI might not work.  In this case, use the `--skip-well-known-check` option.  
+It is up to you to verify that the lets encrypt server can reach your `.well-known/acme-challenge/` URI.
+
 ### Step 5: Install the certificate
 
 The signed https certificate that is output by this script can be used along
