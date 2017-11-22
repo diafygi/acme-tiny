@@ -116,7 +116,7 @@ and read your private account key and CSR.
 
 ```
 #run the script on your server
-python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed.crt
+WEBROOT=/var/www/challenges python acme_tiny.py --account-key ./account.key --csr ./domain.csr --challenge-helper=./writecheck.py --challenge-helper-remove=./removecheck.py > ./signed.crt
 ```
 
 ### Step 5: Install the certificate
@@ -173,7 +173,7 @@ for example script).
 Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
-python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /tmp/signed.crt || exit
+WEBROOT=/var/www/challenges/ python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --challenge-helper=./writecheck.py --challenge-helper-remove=./removecheck.py > /tmp/signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat /tmp/signed.crt intermediate.pem > /path/to/chained.pem
 service nginx reload

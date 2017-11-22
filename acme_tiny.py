@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA, challenge_helper="tee", challenge_helper_remove="rm"):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -107,20 +107,16 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
-        wellknown_path = os.path.join(acme_dir, token)
-        with open(wellknown_path, "w") as wellknown_file:
-            wellknown_file.write(keyauthorization)
+        challenge_value = keyauthorization
+        env = os.environ.copy()
+        env['DOMAIN'] = domain
+        proc = subprocess.Popen([challenge_helper, token], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env)
+        proc.communicate(challenge_value)
 
-        # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-        try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
-            assert resp_data == keyauthorization
-        except (IOError, AssertionError):
-            os.remove(wellknown_path)
-            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
-                wellknown_path, wellknown_url))
+        # check that the challenge_value is in place
+        if proc.returncode:
+            subprocess.check_call([challenge_helper_remove, token])
+            raise ValueError("challenge_helper for {0} failed".format(domain))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
@@ -142,7 +138,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
                 log.info("{0} verified!".format(domain))
-                os.remove(wellknown_path)
+                subprocess.check_call([challenge_helper_remove, token])
                 break
             else:
                 raise ValueError("{0} challenge did not pass: {1}".format(
@@ -175,23 +171,31 @@ def main(argv):
             only ~200 lines, so it won't take long.
 
             ===Example Usage===
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed.crt
+            WEBROOT=/usr/share/nginx/html python acme_tiny.py --account-key ./account.key --csr ./domain.csr --challenge-helper ./writecheck.py --challenge-helper-remove=./removecheck.py > signed.crt
             ===================
 
             ===Example Crontab Renewal (once per month)===
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed.crt 2>> /var/log/acme_tiny.log
+            0 0 1 * * WEBROOT=/usr/share/nginx/html python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --challenge-helper ./writecheck.py --challenge-helper-remove=./removecheck.py > /path/to/signed.crt 2>> /var/log/acme_tiny.log
             ==============================================
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
-    parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--challenge-helper", default="tee", help="challenge helper, default is tee")
+    parser.add_argument("--challenge-helper-remove", default="rm", help="challenge helper remove, default is rm")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(
+        args.account_key,
+        args.csr,
+        log=LOGGER,
+        CA=args.ca,
+        challenge_helper=args.challenge_helper,
+        challenge_helper_remove=args.challenge_helper_remove
+    )
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
