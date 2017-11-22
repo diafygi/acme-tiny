@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, chain=False):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -57,9 +57,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         })
         try:
             resp = urlopen(url, data.encode('utf8'))
-            return resp.getcode(), resp.read()
+            return resp.getcode(), resp.read(), resp.info()
         except IOError as e:
-            return getattr(e, "code", None), getattr(e, "read", e.__str__)()
+            return getattr(e, "code", None), getattr(e, "read", e.__str__)(), None
 
     # find domains
     log.info("Parsing CSR...")
@@ -80,7 +80,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     # get the certificate domains and expiration
     log.info("Registering account...")
-    code, result = _send_signed_request(CA + "/acme/new-reg", {
+    code, result, headers = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
         "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
     })
@@ -96,7 +96,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         log.info("Verifying {0}...".format(domain))
 
         # get new challenge
-        code, result = _send_signed_request(CA + "/acme/new-authz", {
+        code, result, headers = _send_signed_request(CA + "/acme/new-authz", {
             "resource": "new-authz",
             "identifier": {"type": "dns", "value": domain},
         })
@@ -123,7 +123,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                 wellknown_path, wellknown_url))
 
         # notify challenge are met
-        code, result = _send_signed_request(challenge['uri'], {
+        code, result, headers = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
             "keyAuthorization": keyauthorization,
         })
@@ -153,17 +153,26 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
+    code, result, headers = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
     })
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
+    certchain = [result]
+    if chain:
+        def parse_link_header(line):
+            m = re.search(r"^Link:\s*<([^>]*)>(?:\s*;\s*(.*))?\r\n$", line)
+            return (m.group(1), { a[0]: a[1].strip('"') for a in [attr.split("=") for attr in m.group(2).split("\s*;\s*")] })
+
+        up = [link for link, attr in [parse_link_header(l) for l in headers.getallmatchingheaders("Link")] if attr['rel'] == 'up']
+        certchain += [urlopen(url).read() for url in up]
+
     # return signed certificate!
     log.info("Certificate signed!")
-    return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
-        "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
+    return "".join(["""-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
+                    "\n".join(textwrap.wrap(base64.b64encode(cert).decode('utf8'), 64))) for cert in certchain])
 
 def main(argv):
     parser = argparse.ArgumentParser(
@@ -188,10 +197,11 @@ def main(argv):
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--chain", action="store_true", help="fetch and append intermediate certs to output")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, chain=args.chain)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
