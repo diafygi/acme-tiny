@@ -134,10 +134,9 @@ cat signed.crt intermediate.pem > chained.pem
 
 ```nginx
 server {
-    listen 443;
+    listen 443 ssl;
     server_name yoursite.com, www.yoursite.com;
 
-    ssl on;
     ssl_certificate /path/to/chained.pem;
     ssl_certificate_key /path/to/domain.key;
     ssl_session_timeout 5m;
