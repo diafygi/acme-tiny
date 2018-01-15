@@ -14,7 +14,7 @@ class TestModule(unittest.TestCase):
     "Tests for acme_tiny.get_crt()"
 
     def setUp(self):
-        self.CA = "https://acme-staging.api.letsencrypt.org"
+        self.CA = "https://acme-staging-v02.api.letsencrypt.org"
         self.tempdir = tempfile.mkdtemp()
         self.fuse_proc = Popen(["python", "tests/monkey.py", self.tempdir])
 
