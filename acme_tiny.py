@@ -20,11 +20,12 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # helper function - run external commands
-    def _cmd(cmd_list, cmd_input=None):
-        stdin = subprocess.PIPE if cmd_input is not None else None
+    def _cmd(cmd_list, stdin=None, cmd_input=None, err_msg="Command Line Error"):
         proc = subprocess.Popen(cmd_list, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate(cmd_input)
-        return proc, out, err
+        if proc.returncode != 0:
+            raise IOError("{0}\n{1}".format(err_msg, err))
+        return out
 
     # helper function - make request and automatically parse json response
     def _do_request(url, data=None, err_msg="Error", depth=0):
@@ -51,9 +52,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         protected.update({"jwk": jwk} if acct_headers is None else {"kid": acct_headers['Location']})
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         protected_input = "{0}.{1}".format(protected64, payload64).encode('utf8')
-        proc, out, err = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], cmd_input=protected_input)
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
+        out = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], stdin=subprocess.PIPE, cmd_input=protected_input, err_msg="OpenSSL Error")
         data = json.dumps({"protected": protected64, "payload": payload64, "signature": _b64(out)})
         try:
             return _do_request(url, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
@@ -71,9 +70,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # parse account key to get public key
     log.info("Parsing account key...")
-    proc, out, err = _cmd(["openssl", "rsa", "-in", account_key, "-noout", "-text"])
-    if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
+    out = _cmd(["openssl", "rsa", "-in", account_key, "-noout", "-text"], err_msg="OpenSSL Error")
     pub_pattern = r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)"
     pub_hex, pub_exp = re.search(pub_pattern, out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
     pub_exp = "{0:x}".format(int(pub_exp))
@@ -89,9 +86,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # find domains
     log.info("Parsing CSR...")
-    proc, out, err = _cmd(["openssl", "req", "-in", csr, "-noout", "-text"])
-    if proc.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr, err))
+    out = _cmd(["openssl", "req", "-in", csr, "-noout", "-text"], err_msg="Error loading {0}".format(csr))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
@@ -101,7 +96,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
-    log.info("Found domains: {}".format(", ".join(domains)))
+    log.info("Found domains: {0}".format(", ".join(domains)))
 
     # get the ACME directory of urls
     log.info("Getting directory...")
@@ -153,7 +148,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # finalize the order with the csr
     log.info("Signing certificate...")
-    proc, csr_der, err = _cmd(["openssl", "req", "-in", csr, "-outform", "DER"])
+    csr_der = _cmd(["openssl", "req", "-in", csr, "-outform", "DER"], err_msg="DER Export Error")
     _send_signed_request(order['finalize'], {"csr": _b64(csr_der)}, "Error finalizing order")
 
     # poll the order to monitor when it's done
