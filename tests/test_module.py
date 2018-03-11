@@ -14,7 +14,7 @@ class TestModule(unittest.TestCase):
     "Tests for acme_tiny.get_crt()"
 
     def setUp(self):
-        self.CA = "https://acme-staging-v02.api.letsencrypt.org"
+        self.DIR_URL = "https://acme-staging-v02.api.letsencrypt.org/directory"
         self.tempdir = tempfile.mkdtemp()
         self.fuse_proc = Popen(["python", "tests/monkey.py", self.tempdir])
 
@@ -31,7 +31,7 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
@@ -48,7 +48,7 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['san_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
@@ -64,7 +64,7 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ], stdout=PIPE, stderr=PIPE).communicate()
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
             stdout=PIPE, stderr=PIPE).communicate(crt)
@@ -77,7 +77,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", "/foo/bar",
                 "--csr", KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -91,7 +91,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", "/foo/bar",
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -105,7 +105,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['weak_key'].name,
                 "--csr", KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -119,7 +119,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['invalid_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -133,7 +133,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['nonexistent_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -147,7 +147,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['account_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
