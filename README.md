@@ -128,7 +128,7 @@ configure an nginx server:
 
 ```
 #NOTE: For nginx, you need to append the Let's Encrypt intermediate cert to your cert
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
+wget -O - https://acme-v01.api.letsencrypt.org/acme/issuer-cert | openssl x509 -inform der -outform pem -out intermediate.pem
 cat signed.crt intermediate.pem > chained.pem
 ```
 
@@ -174,7 +174,7 @@ Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
 python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /tmp/signed.crt || exit
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
+wget -O - https://acme-v01.api.letsencrypt.org/acme/issuer-cert | openssl x509 -inform der -outform pem -out intermediate.pem
 cat /tmp/signed.crt intermediate.pem > /path/to/chained.pem
 service nginx reload
 ```
