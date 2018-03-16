@@ -24,7 +24,7 @@ variable on your local test setup.
   * `pip install -r requirements.txt`
 5. Run the test suit on your local.
   * `cd /path/to/acme-tiny`
-  * `coverage run --source ./ --omit ./tests/server.py -m unittest tests`
+  * `coverage run --source ./ --omit ./tests/server.py,./setup.py -m unittest tests`
 
 ## Why use FUSE?
 
