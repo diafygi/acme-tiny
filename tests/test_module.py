@@ -175,7 +175,7 @@ class TestModule(unittest.TestCase):
         # make sure the certificate was issued and the contact details were updated
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
-        self.assertIn("Updated contact details:\nmailto:devteam@example.com\nmailto:boss@example.com", log_string)
+        self.assertIn("Updated contact details:\nmailto:devteam@example.com\nmailto:boss@example.com", log_string.decode("utf8"))
         # remove logging capture
         acme_tiny.LOGGER.removeHandler(debug_handler)
 
