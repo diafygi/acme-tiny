@@ -11,7 +11,7 @@ The only prerequisites are python and openssl.
 
 **PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!**
 
-##Donate
+## Donate
 
 If this script is useful to you, please donate to the EFF. I don't work there,
 but they do fantastic work.
@@ -116,21 +116,15 @@ and read your private account key and CSR.
 
 ```
 #run the script on your server
-python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed.crt
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed_chain.crt
 ```
 
 ### Step 5: Install the certificate
 
-The signed https certificate that is output by this script can be used along
+The signed https certificate chain that is output by this script can be used along
 with your private key to run an https server. You need to include them in the
 https settings in your web server's configuration. Here's an example on how to
 configure an nginx server:
-
-```
-#NOTE: For nginx, you need to append the Let's Encrypt intermediate cert to your cert
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-cat signed.crt intermediate.pem > chained.pem
-```
 
 ```nginx
 server {
@@ -138,7 +132,7 @@ server {
     server_name yoursite.com, www.yoursite.com;
 
     ssl on;
-    ssl_certificate /path/to/chained.pem;
+    ssl_certificate /path/to/signed_chain.crt;
     ssl_certificate_key /path/to/domain.key;
     ssl_session_timeout 5m;
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
@@ -173,9 +167,7 @@ for example script).
 Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
-python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /tmp/signed.crt || exit
-wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-cat /tmp/signed.crt intermediate.pem > /path/to/chained.pem
+python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /path/to/signed_chain.crt || exit
 service nginx reload
 ```
 
@@ -184,6 +176,16 @@ service nginx reload
 0 0 1 * * /path/to/renew_cert.sh 2>> /var/log/acme_tiny.log
 ```
 
+NOTE: Since Let's Encrypt's ACME v2 release (acme-tiny 4.0.0+), the intermediate
+certificate is included in the issued certificate download, so you no longer have
+to independently download the intermediate certificate and concatenate it to your
+signed certificate. If you have an bash script using acme-tiny &lt;4.0 (e.g. before
+2018-03-17) with acme-tiny 4.0.0+, then you may be adding the intermediate
+certificate to your signed_chain.crt twice (not a big deal, it should still work fine,
+but just makes the certificate slightly larger than it needs to be). To fix,
+simply remove the bash code where you're downloading the intermediate and adding
+it to the acme-tiny certificate output.
+
 ## Permissions
 
 The biggest problem you'll likely come across while setting up and running this
@@ -191,7 +193,7 @@ script is permissions. You want to limit access to your account private key and
 challenge web folder as much as possible. I'd recommend creating a user
 specifically for handling this script, the account private key, and the
 challenge folder. Then add the ability for that user to write to your installed
-certificate file (e.g. `/path/to/chained.pem`) and reload your webserver. That
+certificate file (e.g. `/path/to/signed_chain.crt`) and reload your webserver. That
 way, the cron script will do its thing, overwrite your old certificate, and
 reload your webserver without having permission to do anything else.
 
