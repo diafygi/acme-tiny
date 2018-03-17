@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2015 Daniel Roesler, under the MIT license. See LICENSE for more details.
+# Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen, Request # Python 3
@@ -112,7 +112,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     log.info("Registered!" if code == 201 else "Already registered!")
     if contact is not None:
         account, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
-        log.info("Updated contact details:\n{}".format("\n".join(account['contact'])))
+        log.info("Updated contact details:\n{0}".format("\n".join(account['contact'])))
 
     # create a new order
     log.info("Creating new order...")
@@ -168,18 +168,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent("""\
-            This script automates the process of getting a signed TLS certificate from
-            Let's Encrypt using the ACME protocol. It will need to be run on your server
-            and have access to your private account key, so PLEASE READ THROUGH IT! It's
-            only ~200 lines, so it won't take long.
+            This script automates the process of getting a signed TLS certificate from Let's Encrypt using
+            the ACME protocol. It will need to be run on your server and have access to your private
+            account key, so PLEASE READ THROUGH IT! It's only ~200 lines, so it won't take long.
 
-            ===Example Usage===
+            Example Usage:
             python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed_chain.crt
-            ===================
 
-            ===Example Crontab Renewal (once per month)===
+            Example Crontab Renewal (once per month):
             0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed_chain.crt 2>> /var/log/acme_tiny.log
-            ==============================================
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
