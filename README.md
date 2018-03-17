@@ -9,7 +9,7 @@ to be run on your server and have access to your private Let's Encrypt account
 key, I tried to make it as tiny as possible (currently less than 200 lines).
 The only prerequisites are python and openssl.
 
-**PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!**
+**PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE ACCOUNT KEY!**
 
 ## Donate
 
