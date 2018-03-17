@@ -29,7 +29,9 @@ def gen_keys():
     # subject alt-name domain
     san_csr = NamedTemporaryFile()
     san_conf = NamedTemporaryFile()
-    san_conf.write(open("/etc/ssl/openssl.cnf").read().encode("utf8"))
+    for openssl_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
+        if os.path.exists(openssl_cnf): break
+    san_conf.write(open(openssl_cnf).read().encode("utf8"))
     san_conf.write("\n[SAN]\nsubjectAltName=DNS:{0}\n".format(DOMAIN).encode("utf8"))
     san_conf.seek(0)
     Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
