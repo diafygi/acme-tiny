@@ -9,6 +9,9 @@ explains how to setup and test acme-tiny yourself.
 1. Make a test subdomain for a server you control. Set it as an environmental
 variable on your local test setup.
   * On your local: `export TRAVIS_DOMAIN=travis-ci.gethttpsforfree.com`
+  * Configure the webserver on `$TRAVIS_DOMAIN` for redirection of
+    `http://$TRAVIS_DOMAIN/.well-known/acme-challenge/` to
+    `http://localhost:8888/`
 2. Generate a shared secret between your local test setup and your server.
   * `openssl rand -base64 32`
   * On your local: `export TRAVIS_SESSION="<random_string_here>"`
@@ -24,7 +27,7 @@ variable on your local test setup.
   * `pip install -r requirements.txt`
 5. Run the test suit on your local.
   * `cd /path/to/acme-tiny`
-  * `coverage run --source ./ --omit ./tests/server.py -m unittest tests`
+  * `coverage run --source ./ --omit ./tests/server.py,./setup.py -m unittest tests`
 
 ## Why use FUSE?
 
