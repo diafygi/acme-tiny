@@ -67,15 +67,15 @@ to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
 you can't use your account private key as your domain private key!
 
 ```
-#generate a domain private key (if you haven't already)
+# Generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
 ```
 
 ```
-#for a single domain
+# For a single domain
 openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 
-#for multiple domains (use this one if you want both www.yoursite.com and yoursite.com)
+# For multiple domains (use this one if you want both www.yoursite.com and yoursite.com)
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com")) > domain.csr
 ```
 
@@ -89,12 +89,12 @@ Encrypt will perform a plain HTTP request to port 80 on your server, so you
 must serve the challenge files via HTTP (a redirect to HTTPS is fine too).
 
 ```
-#make some challenge folder (modify to suit your needs)
+# Make some challenge folder (modify to suit your needs)
 mkdir -p /var/www/challenges/
 ```
 
 ```nginx
-#example for nginx
+# Example for nginx
 server {
     listen 80;
     server_name yoursite.com www.yoursite.com;
@@ -115,7 +115,7 @@ script on your server with the permissions needed to write to the above folder
 and read your private account key and CSR.
 
 ```
-#run the script on your server
+# Run the script on your server
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed_chain.crt
 ```
 
@@ -171,7 +171,7 @@ service nginx reload
 ```
 
 ```
-#example line in your crontab (runs once per month)
+# Example line in your crontab (runs once per month)
 0 0 1 * * /path/to/renew_cert.sh 2>> /var/log/acme_tiny.log
 ```
 
