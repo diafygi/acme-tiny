@@ -1,4 +1,4 @@
-import unittest, os, sys, tempfile
+import unittest, os, sys, tempfile, logging
 from subprocess import Popen, PIPE
 try:
     from StringIO import StringIO # Python 2
@@ -14,7 +14,7 @@ class TestModule(unittest.TestCase):
     "Tests for acme_tiny.get_crt()"
 
     def setUp(self):
-        self.CA = "https://acme-staging.api.letsencrypt.org"
+        self.DIR_URL = "https://acme-staging-v02.api.letsencrypt.org/directory"
         self.tempdir = tempfile.mkdtemp()
         self.fuse_proc = Popen(["python", "tests/monkey.py", self.tempdir])
 
@@ -31,13 +31,12 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
         sys.stdout = old_stdout
-        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
-            stdout=PIPE, stderr=PIPE).communicate(crt)
+        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_success_san(self):
@@ -48,13 +47,12 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['san_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ])
         sys.stdout.seek(0)
         crt = sys.stdout.read().encode("utf8")
         sys.stdout = old_stdout
-        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
-            stdout=PIPE, stderr=PIPE).communicate(crt)
+        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_success_cli(self):
@@ -64,10 +62,9 @@ class TestModule(unittest.TestCase):
             "--account-key", KEYS['account_key'].name,
             "--csr", KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
-            "--ca", self.CA,
+            "--directory-url", self.DIR_URL,
         ], stdout=PIPE, stderr=PIPE).communicate()
-        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE,
-            stdout=PIPE, stderr=PIPE).communicate(crt)
+        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
 
     def test_missing_account_key(self):
@@ -77,7 +74,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", "/foo/bar",
                 "--csr", KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -91,7 +88,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", "/foo/bar",
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -105,7 +102,7 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['weak_key'].name,
                 "--csr", KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -119,21 +116,21 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['invalid_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
         self.assertIn("Invalid character in DNS name", result.args[0])
 
-    def test_nonexistant_domain(self):
+    def test_nonexistent_domain(self):
         """ Should be unable verify a nonexistent domain """
         try:
             result = acme_tiny.main([
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['nonexistent_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
@@ -147,10 +144,38 @@ class TestModule(unittest.TestCase):
                 "--account-key", KEYS['account_key'].name,
                 "--csr", KEYS['account_csr'].name,
                 "--acme-dir", self.tempdir,
-                "--ca", self.CA,
+                "--directory-url", self.DIR_URL,
             ])
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
         self.assertIn("certificate public key must be different than account key", result.args[0])
+
+    def test_contact(self):
+        """ Make sure optional contact details can be set """
+        # add a logging handler that captures the info log output
+        log_output = StringIO()
+        debug_handler = logging.StreamHandler(log_output)
+        acme_tiny.LOGGER.addHandler(debug_handler)
+        # call acme_tiny with new contact details
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        result = acme_tiny.main([
+            "--account-key", KEYS['account_key'].name,
+            "--csr", KEYS['domain_csr'].name,
+            "--acme-dir", self.tempdir,
+            "--directory-url", self.DIR_URL,
+            "--contact", "mailto:devteam@example.com", "mailto:boss@example.com",
+        ])
+        sys.stdout.seek(0)
+        crt = sys.stdout.read().encode("utf8")
+        sys.stdout = old_stdout
+        log_output.seek(0)
+        log_string = log_output.read().encode("utf8")
+        # make sure the certificate was issued and the contact details were updated
+        out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
+        self.assertIn("Issuer: CN=Fake LE Intermediate", out.decode("utf8"))
+        self.assertIn("Updated contact details:\nmailto:devteam@example.com\nmailto:boss@example.com", log_string.decode("utf8"))
+        # remove logging capture
+        acme_tiny.LOGGER.removeHandler(debug_handler)
 
