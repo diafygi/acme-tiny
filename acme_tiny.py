@@ -7,7 +7,8 @@ except ImportError:
     from urllib2 import urlopen, Request # Python 2
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
-DEFAULT_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
+LE_ACME_V2_URL="https://acme-v02.api.letsencrypt.org/directory"
+DEFAULT_DIRECTORY_URL = os.environ["ACME_V2_URL"] if "ACME_V2_URL" in os.environ else LE_ACME_V2_URL
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
