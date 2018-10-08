@@ -132,7 +132,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
         wellknown_path = os.path.join(acme_dir, token)
-        with open(wellknown_path, "w") as wellknown_file:
+        with os.fdopen(os.open(wellknown_path, os.O_WRONLY | os.O_CREAT, 0644), 'w') as wellknown_file:
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
