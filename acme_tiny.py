@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, ssl
+
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError:
     from urllib2 import urlopen, Request # Python 2
+
+# Solved CERTIFICATE_VERIFY_FAILED after Python 2.7.9
+try:
+    ssl._create_default_https_context = ssl._create_unverified_context
+except:
+    pass
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
 DEFAULT_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
