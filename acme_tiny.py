@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, ssl
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError:
@@ -29,9 +29,9 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         return out
 
     # helper function - make request and automatically parse json response
-    def _do_request(url, data=None, err_msg="Error", depth=0):
+    def _do_request(url, data=None, err_msg="Error", depth=0, context=None):
         try:
-            resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}))
+            resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}), context=context)
             resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
         except IOError as e:
             resp_data = e.read().decode("utf8") if hasattr(e, "read") else str(e)
@@ -138,7 +138,10 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         # check that the file is in place
         try:
             wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-            assert(disable_check or _do_request(wellknown_url)[0] == keyauthorization)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            assert(disable_check or _do_request(wellknown_url, context=ctx)[0] == keyauthorization)
         except (AssertionError, ValueError) as e:
             os.remove(wellknown_path)
             raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
