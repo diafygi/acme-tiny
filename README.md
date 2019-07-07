@@ -166,7 +166,8 @@ for example script).
 Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
-cert=$(python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/) && echo $cert > /path/to/signed_chain.crt || exit
+python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /path/to/signed_chain.crt.tmp || exit
+mv /path/to/signed_chain.crt.tmp /path/to/signed_chain.crt
 service nginx reload
 ```
 
