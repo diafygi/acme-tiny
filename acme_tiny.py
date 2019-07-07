@@ -63,12 +63,12 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # helper function - poll until complete
     def _poll_until_not(url, pending_statuses, err_msg):
-        while True:
-            result, _, _ = _send_signed_request(url, None, err_msg)
-            if result['status'] in pending_statuses:
-                time.sleep(2)
-                continue
-            return result
+        result, t0 = None, time.time()
+        while result is None or result['status'] in pending_statuses:
+            assert (time.time() - t0 < 3600), "Polling timeout" # 1 hour timeout
+            time.sleep(0 if result is None else 2)
+            result, _, _ = _do_request(url, err_msg=err_msg)
+        return result
 
     # parse account key to get public key
     log.info("Parsing account key...")
