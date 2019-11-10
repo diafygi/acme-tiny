@@ -129,7 +129,7 @@ configure an nginx server:
 ```nginx
 server {
     listen 443 ssl;
-    server_name yoursite.com, www.yoursite.com;
+    server_name yoursite.com www.yoursite.com;
 
     ssl_certificate /path/to/signed_chain.crt;
     ssl_certificate_key /path/to/domain.key;
@@ -145,7 +145,7 @@ server {
 
 server {
     listen 80;
-    server_name yoursite.com, www.yoursite.com;
+    server_name yoursite.com www.yoursite.com;
 
     location /.well-known/acme-challenge/ {
         alias /var/www/challenges/;
