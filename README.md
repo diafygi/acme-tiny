@@ -78,7 +78,7 @@ openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 # For multiple domains (use this one if you want both www.yoursite.com and yoursite.com)
 openssl req -new -sha256 -key domain.key -subj "/" -addext "subjectAltName = DNS:yoursite.com, DNS:www.yoursite.com" > domain.csr
 
-# For multiple domains, if running on Debian 9, Ubuntu 18.04 w/o updates, or any older operating system not shipping OpenSSL v1.1.1+
+# For multiple domains (same as above but works with openssl < 1.1.1)
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com")) > domain.csr
 ```
 
