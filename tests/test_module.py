@@ -121,7 +121,7 @@ class TestModule(unittest.TestCase):
         except Exception as e:
             result = e
         self.assertIsInstance(result, ValueError)
-        self.assertIn("Invalid character in DNS name", result.args[0])
+        self.assertIn("Domain name contains an invalid character", result.args[0])
 
     def test_nonexistent_domain(self):
         """ Should be unable verify a nonexistent domain """
