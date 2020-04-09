@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, textwrap, logging
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError:
     from urllib2 import urlopen, Request # Python 2
 
-DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
+DEFAULT_CA = "https://acme-v02.api.letsencrypt.org"  # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
 DEFAULT_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
 
 LOGGER = logging.getLogger(__name__)
 
+
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None):
-    directory, acct_headers, alg, jwk = None, None, None, None # global variables
+    directory, acct_headers, alg, jwk = None, None, None, None  # global variables
 
     # helper functions - base64 encode for jose spec
     def _b64(b):
@@ -21,28 +22,28 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     # helper function - run external commands
     def _cmd(cmd_list, stdin=None, cmd_input=None, err_msg="Command Line Error"):
         proc = subprocess.Popen(cmd_list, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = proc.communicate(cmd_input)
+        stdout, err = proc.communicate(cmd_input)
         if proc.returncode != 0:
             raise IOError("{0}\n{1}".format(err_msg, err))
-        return out
+        return stdout
 
     # helper function - make request and automatically parse json response
     def _do_request(url, data=None, err_msg="Error", depth=0):
         try:
             resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}))
-            resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
-        except IOError as e:
-            resp_data = e.read().decode("utf8") if hasattr(e, "read") else str(e)
-            code, headers = getattr(e, "code", None), {}
+            resp_data, resp_code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
+        except IOError as error:
+            resp_data = error.read().decode("utf8") if hasattr(error, "read") else str(error)
+            resp_code, headers = getattr(error, "code", None), {}
         try:
-            resp_data = json.loads(resp_data) # try to parse json results
+            resp_data = json.loads(resp_data)  # try to parse json results
         except ValueError:
-            pass # ignore json parsing errors
-        if depth < 100 and code == 400 and resp_data['type'] == "urn:ietf:params:acme:error:badNonce":
-            raise IndexError(resp_data) # allow 100 retrys for bad nonces
-        if code not in [200, 201, 204]:
-            raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, code, resp_data))
-        return resp_data, code, headers
+            pass  # ignore json parsing errors
+        if depth < 100 and resp_code == 400 and resp_data['type'] == "urn:ietf:params:acme:error:badNonce":
+            raise IndexError(resp_data)  # allow 100 retries for bad nonces
+        if resp_code not in [200, 201, 204]:
+            raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, resp_code, resp_data))
+        return resp_data, resp_code, headers
 
     # helper function - make signed requests
     def _send_signed_request(url, payload, err_msg, depth=0):
@@ -52,18 +53,18 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         protected.update({"jwk": jwk} if acct_headers is None else {"kid": acct_headers['Location']})
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         protected_input = "{0}.{1}".format(protected64, payload64).encode('utf8')
-        out = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], stdin=subprocess.PIPE, cmd_input=protected_input, err_msg="OpenSSL Error")
-        data = json.dumps({"protected": protected64, "payload": payload64, "signature": _b64(out)})
+        stdout = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], stdin=subprocess.PIPE, cmd_input=protected_input, err_msg="OpenSSL Error")
+        data = json.dumps({"protected": protected64, "payload": payload64, "signature": _b64(stdout)})
         try:
             return _do_request(url, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
-        except IndexError: # retry bad nonces (they raise IndexError)
+        except IndexError:  # retry bad nonces (they raise IndexError)
             return _send_signed_request(url, payload, err_msg, depth=(depth + 1))
 
     # helper function - poll until complete
     def _poll_until_not(url, pending_statuses, err_msg):
         result, t0 = None, time.time()
         while result is None or result['status'] in pending_statuses:
-            assert (time.time() - t0 < 3600), "Polling timeout" # 1 hour timeout
+            assert (time.time() - t0 < 3600), "Polling timeout"  # 1 hour timeout
             time.sleep(0 if result is None else 2)
             result, _, _ = _send_signed_request(url, None, err_msg)
         return result
@@ -72,7 +73,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     log.info("Parsing account key.")
     out = _cmd(["openssl", "rsa", "-in", account_key, "-noout", "-text"], err_msg="OpenSSL Error")
     pub_pattern = r"modulus:[\s]+?00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)"
-    pub_hex, pub_exp = re.search(pub_pattern, out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
+    pub_hex, pub_exp = re.search(pub_pattern, out.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
     alg = "RS256"
@@ -91,7 +92,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
         domains.add(common_name.group(1))
-    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: (?:critical)?\n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE|re.DOTALL)
+    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: (?:critical)?\n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE | re.DOTALL)
     if subject_alt_names is not None:
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
@@ -100,7 +101,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # get the ACME directory of urls
     log.info("Getting directory.")
-    directory_url = CA + "/directory" if CA != DEFAULT_CA else directory_url # backwards compatibility with deprecated CA kwarg
+    directory_url = CA + "/directory" if CA != DEFAULT_CA else directory_url  # backwards compatibility with deprecated CA kwarg
     directory, _, _ = _do_request(directory_url, err_msg="Error getting directory")
     log.info("Directory found.")
 
@@ -134,8 +135,8 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
+        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
-            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
             assert (disable_check or _do_request(wellknown_url)[0] == keyauthorization)
         except (AssertionError, ValueError) as e:
             raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
@@ -162,6 +163,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     certificate_pem, _, _ = _send_signed_request(order['certificate'], None, "Certificate download failed")
     log.info("Certificate signed.")
     return certificate_pem
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
@@ -192,5 +194,6 @@ def main(argv=None):
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact)
     sys.stdout.write(signed_crt)
 
-if __name__ == "__main__": # pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     main(sys.argv[1:])
