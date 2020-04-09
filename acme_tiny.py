@@ -69,7 +69,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         return result
 
     # parse account key to get public key
-    log.info("Parsing account key...")
+    log.info("Parsing account key.")
     out = _cmd(["openssl", "rsa", "-in", account_key, "-noout", "-text"], err_msg="OpenSSL Error")
     pub_pattern = r"modulus:[\s]+?00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)"
     pub_hex, pub_exp = re.search(pub_pattern, out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
@@ -85,7 +85,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     thumbprint = _b64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
 
     # find domains
-    log.info("Parsing CSR...")
+    log.info("Parsing CSR.")
     out = _cmd(["openssl", "req", "-in", csr, "-noout", "-text"], err_msg="Error loading {0}".format(csr))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
@@ -96,34 +96,34 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
-    log.info("Found domains: {0}".format(", ".join(domains)))
+    log.info("Found domains: %s.", ", ".join(domains))
 
     # get the ACME directory of urls
-    log.info("Getting directory...")
+    log.info("Getting directory.")
     directory_url = CA + "/directory" if CA != DEFAULT_CA else directory_url # backwards compatibility with deprecated CA kwarg
     directory, _, _ = _do_request(directory_url, err_msg="Error getting directory")
-    log.info("Directory found!")
+    log.info("Directory found.")
 
     # create account, update contact details (if any), and set the global key identifier
-    log.info("Registering account...")
+    log.info("Registering account.")
     reg_payload = {"termsOfServiceAgreed": True}
     account, code, acct_headers = _send_signed_request(directory['newAccount'], reg_payload, "Error registering")
-    log.info("Registered!" if code == 201 else "Already registered!")
+    log.info("Registered.") if code == 201 else log.info("Already registered.")
     if contact is not None:
         account, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
-        log.info("Updated contact details:\n{0}".format("\n".join(account['contact'])))
+        log.info("Updated contact details: %s.", "; ".join(account['contact']))
 
     # create a new order
-    log.info("Creating new order...")
+    log.info("Creating new order.")
     order_payload = {"identifiers": [{"type": "dns", "value": d} for d in domains]}
     order, _, order_headers = _send_signed_request(directory['newOrder'], order_payload, "Error creating new order")
-    log.info("Order created!")
+    log.info("Order created.")
 
     # get the authorizations that need to be completed
     for auth_url in order['authorizations']:
         authorization, _, _ = _send_signed_request(auth_url, None, "Error getting challenges")
         domain = authorization['identifier']['value']
-        log.info("Verifying {0}...".format(domain))
+        log.info("Verifying %s.", domain)
 
         # find the http-01 challenge and write the challenge file
         challenge = [c for c in authorization['challenges'] if c['type'] == "http-01"][0]
@@ -146,10 +146,10 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         if authorization['status'] != "valid":
             raise ValueError("Challenge did not pass for {0}: {1}".format(domain, authorization))
         os.remove(wellknown_path)
-        log.info("{0} verified!".format(domain))
+        log.info("Domain %s verified.", domain)
 
     # finalize the order with the csr
-    log.info("Signing certificate...")
+    log.info("Signing certificate.")
     csr_der = _cmd(["openssl", "req", "-in", csr, "-outform", "DER"], err_msg="DER Export Error")
     _send_signed_request(order['finalize'], {"csr": _b64(csr_der)}, "Error finalizing order")
 
@@ -160,7 +160,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # download the certificate
     certificate_pem, _, _ = _send_signed_request(order['certificate'], None, "Certificate download failed")
-    log.info("Certificate signed!")
+    log.info("Certificate signed.")
     return certificate_pem
 
 def main(argv=None):
