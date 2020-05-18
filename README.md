@@ -205,6 +205,12 @@ reload your webserver without having permission to do anything else.
 * Don't allow this script to be able to read your domain private key!
 * Don't allow this script to be run as root!
 
+## Staging Environment
+
+Let's Encrypt recommends testing new configurations against their staging directory.
+Use `--dry-run` to set directory url appropriatly. For more information see
+[https://letsencrypt.org/docs/staging-environment/](https://letsencrypt.org/docs/staging-environment/).
+
 ## Feedback/Contributing
 
 This project has a very, very limited scope and codebase. I'm happy to receive
