@@ -188,11 +188,16 @@ def main(argv=None):
     parser.add_argument("--directory-url", default=DEFAULT_DIRECTORY_URL, help="certificate authority directory url, default is Let's Encrypt")
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
+    parser.add_argument("--crt-file", default=None)
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact)
-    sys.stdout.write(signed_crt)
+    if args.crt_file:
+        with open(args.crt_file, 'w') as fd:
+            fd.write(signed_crt)
+    else:
+        sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])
