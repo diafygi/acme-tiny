@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, time
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError:
@@ -8,6 +8,7 @@ except ImportError:
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
 DEFAULT_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
+CONST_HEADER = {"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
@@ -15,7 +16,8 @@ LOGGER.setLevel(logging.INFO)
 
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
-
+    new_nonce, auth_transactions = [''], {} # auth_transactions[auth_url] = {'file' : '', 'domain': ''}
+                                            # new_nonce is stored like this for sub function modification without going global or rely on nonlocal keyword that is not supported by all python.
     # helper functions - base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -31,26 +33,42 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     # helper function - make request and automatically parse json response
     def _do_request(url, data=None, err_msg="Error", depth=0):
         try:
-            resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}))
+            resp = urlopen(Request(url, data=data, headers=CONST_HEADER))
             resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
+            new_nonce[0] = headers['Replay-Nonce']
         except IOError as e:
             resp_data = e.read().decode("utf8") if hasattr(e, "read") else str(e)
             code, headers = getattr(e, "code", None), {}
+            _new_nonce(directory['newNonce'])
         try:
             resp_data = json.loads(resp_data) # try to parse json results
         except ValueError:
             pass # ignore json parsing errors
-        if depth < 100 and code == 400 and resp_data['type'] == "urn:ietf:params:acme:error:badNonce":
+        if code == 400 and resp_data['type'] and depth < 100 == "urn:ietf:params:acme:error:badNonce":
             raise IndexError(resp_data) # allow 100 retrys for bad nonces
         if code not in [200, 201, 204]:
             raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, code, resp_data))
         return resp_data, code, headers
 
+    # helper function - get the directory
+    def _get_directory(url):
+        err_msg = "Error getting directory"
+        resp = urlopen(Request(url, headers=CONST_HEADER))
+        resp_data, code = resp.read().decode("utf8"), resp.getcode()
+        if code != 200:
+            raise ValueError("{0}:\nUrl: {1}\nResponse Code: {2}\nResponse: {3}".format(err_msg, url, code, resp_data))
+        return json.loads(resp_data)
+
+    # helper function - getting a new nonce
+    def _new_nonce(url):
+        log.info("_new_nonce: getting new_nonce.")
+        resp = urlopen(Request(url, headers=CONST_HEADER))
+        new_nonce[0] = resp.headers['Replay-Nonce']
+
     # helper function - make signed requests
     def _send_signed_request(url, payload, err_msg, depth=0):
         payload64 = "" if payload is None else _b64(json.dumps(payload).encode('utf8'))
-        new_nonce = _do_request(directory['newNonce'])[2]['Replay-Nonce']
-        protected = {"url": url, "alg": alg, "nonce": new_nonce}
+        protected = {"url": url, "alg": alg, "nonce": new_nonce[0]}
         protected.update({"jwk": jwk} if acct_headers is None else {"kid": acct_headers['Location']})
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         protected_input = "{0}.{1}".format(protected64, payload64).encode('utf8')
@@ -63,12 +81,13 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
     # helper function - poll until complete
     def _poll_until_not(url, pending_statuses, err_msg):
-        result, t0 = None, time.time()
-        while result is None or result['status'] in pending_statuses:
-            assert (time.time() - t0 < 3600), "Polling timeout" # 1 hour timeout
-            time.sleep(0 if result is None else 2)
+        result, t0 = None, time.time() + 3601 # 1 hour timeout
+        while True:
             result, _, _ = _send_signed_request(url, None, err_msg)
-        return result
+            if result['status'] not in pending_statuses:
+                return result
+            assert (time.time() < t0), "Polling timeout"
+            time.sleep(5)
 
     # parse account key to get public key
     log.info("Parsing account key...")
@@ -103,8 +122,11 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     # get the ACME directory of urls
     log.info("Getting directory...")
     directory_url = CA + "/directory" if CA != DEFAULT_CA else directory_url # backwards compatibility with deprecated CA kwarg
-    directory, _, _ = _do_request(directory_url, err_msg="Error getting directory")
+    directory = _get_directory(directory_url)
     log.info("Directory found!")
+
+    # get the nonce on first connect
+    _new_nonce(directory['newNonce'])
 
     # create account, update contact details (if any), and set the global key identifier
     log.info("Registering account...")
@@ -125,30 +147,38 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     for auth_url in order['authorizations']:
         authorization, _, _ = _send_signed_request(auth_url, None, "Error getting challenges")
         domain = authorization['identifier']['value']
-        log.info("Verifying {0}...".format(domain))
+        log.info("Setting up the authorization request for {0}...".format(domain))
 
         # find the http-01 challenge and write the challenge file
         challenge = [c for c in authorization['challenges'] if c['type'] == "http-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
         wellknown_path = os.path.join(acme_dir, token)
+        # write the file
         with open(wellknown_path, "w") as wellknown_file:
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
-        try:
-            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-            assert (disable_check or _do_request(wellknown_url)[0] == keyauthorization)
-        except (AssertionError, ValueError) as e:
-            raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
+        if disable_check == False:
+            try:
+                wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+                assert (_do_request(wellknown_url)[0] == keyauthorization)
+            except (AssertionError, ValueError) as e:
+                raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
 
+        # record the transaction
+        auth_transactions[auth_url] = {'file': wellknown_path, 'domain' : domain}
         # say the challenge is done
         _send_signed_request(challenge['url'], {}, "Error submitting challenges: {0}".format(domain))
-        authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for {0}".format(domain))
+
+    # poll the authorization
+    for auth_url in order['authorizations']:
+        log.info("Validating the challenge status for: " + auth_transactions[auth_url]['domain'])
+        authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for {0}".format(auth_transactions[auth_url]['domain']))
         if authorization['status'] != "valid":
-            raise ValueError("Challenge did not pass for {0}: {1}".format(domain, authorization))
-        os.remove(wellknown_path)
-        log.info("{0} verified!".format(domain))
+            raise ValueError("Challenge did not pass for {0}: {1}".format(auth_transactions[auth_url]['domain'], authorization))
+        log.info("{0}'s challenge verified!".format(auth_transactions[auth_url]['domain']))
+        os.remove(auth_transactions[auth_url]['file'])
 
     # finalize the order with the csr
     log.info("Signing certificate...")
