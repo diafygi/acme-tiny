@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, time
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError:
@@ -44,7 +44,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
             resp_data = json.loads(resp_data) # try to parse json results
         except ValueError:
             pass # ignore json parsing errors
-        if code == 400 and resp_data['type'] and depth < 100 == "urn:ietf:params:acme:error:badNonce":
+        if code == 400 and resp_data['type'] == "urn:ietf:params:acme:error:badNonce" and depth < 100:
             raise IndexError(resp_data) # allow 100 retrys for bad nonces
         if code not in [200, 201, 204]:
             raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, code, resp_data))
