@@ -29,13 +29,20 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         return out
 
     # helper function - make request and automatically parse json response
-    def _do_request(url, data=None, err_msg="Error", depth=0):
-        try:
-            resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}))
-            resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
-        except IOError as e:
-            resp_data = e.read().decode("utf8") if hasattr(e, "read") else str(e)
-            code, headers = getattr(e, "code", None), {}
+    def _do_request(url, data=None, err_msg="Error", depth=0, ntries=10, timeout=10):
+        for _ in range(ntries):
+            try:
+                resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}), timeout=timeout)
+                resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
+                #log.info("Request ok")
+                break
+            except IOError as e:
+                resp_data = e.read().decode("utf8") if hasattr(e, "read") else str(e)
+                code, headers = getattr(e, "code", None), {}
+                log.info("Request failed, retrying in 3s...")
+                time.sleep(3)
+        else:
+            raise
         try:
             resp_data = json.loads(resp_data) # try to parse json results
         except ValueError:
