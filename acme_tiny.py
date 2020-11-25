@@ -13,8 +13,8 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None):
-    directory, acct_headers, alg, jwk = None, None, None, None # global variables
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, kid=None):
+    directory, alg, jwk = None, None, None # global variables
 
     # helper functions - base64 encode for jose spec
     def _b64(b):
@@ -51,7 +51,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         payload64 = "" if payload is None else _b64(json.dumps(payload).encode('utf8'))
         new_nonce = _do_request(directory['newNonce'])[2]['Replay-Nonce']
         protected = {"url": url, "alg": alg, "nonce": new_nonce}
-        protected.update({"jwk": jwk} if acct_headers is None else {"kid": acct_headers['Location']})
+        protected.update({"jwk": jwk} if kid is None else {"kid": kid})
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         protected_input = "{0}.{1}".format(protected64, payload64).encode('utf8')
         out = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], stdin=subprocess.PIPE, cmd_input=protected_input, err_msg="OpenSSL Error")
@@ -107,12 +107,14 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     log.info("Directory found!")
 
     # create account, update contact details (if any), and set the global key identifier
-    log.info("Registering account...")
-    reg_payload = {"termsOfServiceAgreed": True}
-    account, code, acct_headers = _send_signed_request(directory['newAccount'], reg_payload, "Error registering")
-    log.info("Registered!" if code == 201 else "Already registered!")
+    if kid is None:
+        log.info("Registering account...")
+        reg_payload = {"termsOfServiceAgreed": True}
+        account, code, acct_headers = _send_signed_request(directory['newAccount'], reg_payload, "Error registering")
+        kid = acct_headers['Location']
+        log.info("Registered!" if code == 201 else "Already registered!")
     if contact is not None:
-        account, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
+        account, _, _ = _send_signed_request(kid, {"contact": contact}, "Error updating contact details")
         log.info("Updated contact details:\n{0}".format("\n".join(account['contact'])))
 
     # create a new order
@@ -181,6 +183,7 @@ def main(argv=None):
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
+    parser.add_argument("--kid", default=None, help="identity of your Let's Encrypt account")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
@@ -191,7 +194,7 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, kid=args.kid)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
