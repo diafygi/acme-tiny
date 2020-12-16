@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, alternate_chain=False):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
 
     # helper functions - base64 encode for jose spec
@@ -46,8 +46,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
             raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, code, resp_data))
         return resp_data, code, headers
 
-    # helper function - make signed requests
-    def _send_signed_request(url, payload, err_msg, depth=0):
+    def _prepare_data(url, payload):
         payload64 = "" if payload is None else _b64(json.dumps(payload).encode('utf8'))
         new_nonce = _do_request(directory['newNonce'])[2]['Replay-Nonce']
         protected = {"url": url, "alg": alg, "nonce": new_nonce}
@@ -55,11 +54,26 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         protected64 = _b64(json.dumps(protected).encode('utf8'))
         protected_input = "{0}.{1}".format(protected64, payload64).encode('utf8')
         out = _cmd(["openssl", "dgst", "-sha256", "-sign", account_key], stdin=subprocess.PIPE, cmd_input=protected_input, err_msg="OpenSSL Error")
-        data = json.dumps({"protected": protected64, "payload": payload64, "signature": _b64(out)})
+        return json.dumps({"protected": protected64, "payload": payload64, "signature": _b64(out)})
+
+    # helper function - make signed requests
+    def _send_signed_request(url, payload, err_msg, depth=0, download_cert=False):
+        data = _prepare_data(url, payload)
         try:
-            return _do_request(url, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
+            if alternate_chain and download_cert:
+                resp_data, code, headers = _do_request(url, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
+                links = headers.get('link', []).split(',')
+                alternate_links = [link.strip().replace('<', '').replace('>;rel="alternate"', '') for link in links if 'rel="alternate"' in link] 
+                try:
+                    alt_link = alternate_links[0] # It is possible to have more than 1 alternate link, currently only 1 is available for LetsEncrypt.
+                    data = _prepare_data(alt_link, payload)
+                    return _do_request(alt_link, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
+                except Exception as e:
+                    raise ValueError(err_msg)
+            else:
+                return _do_request(url, data=data.encode('utf8'), err_msg=err_msg, depth=depth)
         except IndexError: # retry bad nonces (they raise IndexError)
-            return _send_signed_request(url, payload, err_msg, depth=(depth + 1))
+            return _send_signed_request(url, payload, err_msg, depth=(depth + 1), download_cert=download_cert)
 
     # helper function - poll until complete
     def _poll_until_not(url, pending_statuses, err_msg):
@@ -161,7 +175,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         raise ValueError("Order failed: {0}".format(order))
 
     # download the certificate
-    certificate_pem, _, _ = _send_signed_request(order['certificate'], None, "Certificate download failed")
+    certificate_pem, _, _ = _send_signed_request(order['certificate'], None, "Certificate download failed", download_cert=True)
     log.info("Certificate signed!")
     return certificate_pem
 
@@ -188,10 +202,12 @@ def main(argv=None):
     parser.add_argument("--directory-url", default=DEFAULT_DIRECTORY_URL, help="certificate authority directory url, default is Let's Encrypt")
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
+    parser.add_argument("--alternate-chain", dest="alternate_chain", action="store_true", help="Download certificate signed with an alternate chain")
+    parser.set_defaults(alternate_chain=False)
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, alternate_chain=args.alternate_chain)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
