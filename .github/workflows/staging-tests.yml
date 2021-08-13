@@ -1,5 +1,5 @@
 name: Staging Tests
-on: [workflow_run]
+on: [workflow_dispatch]
 jobs:
   test:
     name: Run tests
