@@ -37,7 +37,7 @@ class TestModule(unittest.TestCase):
         Set up ACME server for each test (or use Let's Encrypt's staging server)
         """
         # use Let's Encrypt staging server
-        if USE_STAGING:
+        if USE_STAGING: # pragma: no cover
             os.unsetenv("SSL_CERT_FILE")  # use the default ssl trust store
             # config references
             self.tempdir = SSHFS_CHALLENGE_DIR
@@ -335,7 +335,7 @@ class TestModule(unittest.TestCase):
     ############################
 
     @unittest.skipIf((not USE_STAGING), "only checked on staging since pebble doesn't support CN names")
-    def test_success_cn(self):
+    def test_success_cn(self): # pragma: no cover
         """ Successfully issue a certificate via common name """
         old_stdout = sys.stdout
         sys.stdout = StringIO()
@@ -353,7 +353,7 @@ class TestModule(unittest.TestCase):
         self.assertIn(self.ca_issued_string, out.decode("utf8"))
 
     @unittest.skipIf((not USE_STAGING), "only checked on staging since pebble doesn't check for weak keys")
-    def test_weak_key(self):
+    def test_weak_key(self): # pragma: no cover
         """ Let's Encrypt rejects weak keys """
         try:
             result = acme_tiny.main([

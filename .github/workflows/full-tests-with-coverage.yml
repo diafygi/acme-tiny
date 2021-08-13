@@ -12,12 +12,8 @@ jobs:
             os: ubuntu-20.04
             python-version: 2.7
 
-          - test-name: ubuntu-20.04-python-3.3
-            os: ubuntu-20.04
-            python-version: 3.3
-
-          - test-name: ubuntu-20.04-python-3.4
-            os: ubuntu-20.04
+          - test-name: ubuntu-18.04-python-3.4
+            os: ubuntu-18.04
             python-version: 3.4
 
           - test-name: ubuntu-20.04-python-3.5
@@ -43,6 +39,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+
+      - name: Setup pebble
+        run: |
+            export PATH=$PATH:$(go env GOPATH)/bin
+            go get -u github.com/letsencrypt/pebble/...
+            cd $GOPATH/src/github.com/letsencrypt/pebble && go install ./...
+            pebble -h || true
+
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -55,7 +63,9 @@ jobs:
           pip install -U -r tests/requirements.txt
 
       - name: Run tests with coverage
-        run: coverage run --source . --omit ./setup.py -m unittest tests
+        run: |
+          export PEBBLE_BIN=$(go env GOPATH)/bin/pebble
+          coverage run --source . --omit ./setup.py -m unittest tests
 
       - name: Print coverage report
         run: coverage report -m

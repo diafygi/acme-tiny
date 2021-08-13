@@ -231,7 +231,7 @@ def setup_pebble(pebble_bin_path, bad_nonces=0):
         except IOError:
             pass  # don't care about failed connections
         time.sleep(0.5)  # wait a bit and try again
-    else:
+    else: # pragma: no cover
         pebble_server_proc.terminate()
         raise PebbleServerException("pebble failed to start :(")
 
@@ -272,7 +272,7 @@ def setup_local_fileserver(test_port, pebble_proc=None):
         except IOError:
             pass  # don't care about failed connections
         time.sleep(0.5)  # wait a bit and try again
-    else:
+    else: # pragma: no cover
         os.remove(testchallenge_path)
         local_fileserver_proc.terminate()
         if pebble_proc is not None:
