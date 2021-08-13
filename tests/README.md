@@ -1,47 +1,60 @@
 # How to test acme-tiny
 
-Testing acme-tiny requires a bit of setup since it interacts with other servers
-(Let's Encrypt's staging server) to test issuing fake certificates. This readme
-explains how to setup and test acme-tiny yourself.
+Testing acme-tiny requires a bit of setup since it needs to interact with a local Let's Encrypt CA test server. This readme explains how to set up your local environment so you can run `acme-tiny` tests yourself.
 
-## Setup instructions
+## Setup instructions (default)
 
-1. Make a test subdomain for a server you control. Set it as an environmental
-variable on your local test setup.
-  * On your local: `export TRAVIS_DOMAIN=travis-ci.gethttpsforfree.com`
-  * Configure the webserver on `$TRAVIS_DOMAIN` for redirection of
-    `http://$TRAVIS_DOMAIN/.well-known/acme-challenge/` to
-    `http://localhost:8888/`
-2. Generate a shared secret between your local test setup and your server.
-  * `openssl rand -base64 32`
-  * On your local: `export TRAVIS_SESSION="<random_string_here>"`
-3. Copy and run the test suite mini-server on your server:
-  * `scp server.py ubuntu@travis-ci.gethttpsforfree.com`
-  * `ssh ubuntu@travis-ci.gethttpsforfree.com`
-  * `export TRAVIS_SESSION="<random_string_here>"`
-  * `sudo server.py`
-4. Install the test requirements on your local (FUSE and optionally coveralls).
-  * `sudo apt-get install fuse`
-  * `virtualenv /tmp/venv`
-  * `source /tmp/venv/bin/activate`
-  * `pip install -r requirements.txt`
-5. Run the test suit on your local.
+In the default test setup, we use [pebble](https://github.com/letsencrypt/pebble) as the mock Let's Encrypt CA server on your local computer. So you need to install that before running the test suite.
+
+1. Install the Let's Encrypt test server: `pebble` (instructions below are for Ubuntu 20.04, adjust as needed)
+  * `sudo apt install golang`
+  * `go get -u github.com/letsencrypt/pebble/...`
+  * `cd ~/go/src/github.com/letsencrypt/pebble && go install ./...`
+  * `~/go/bin/pebble -h` (should print out pebble usage help)
+2. Setup a virtual environment for python:
+  * `virtualenv -p python3 /tmp/venv` (creates the virtualenv)
+  * `source /tmp/venv/bin/activate` (starts using the virtualenv)
+3. Install `acme-tiny` test dependencies:
   * `cd /path/to/acme-tiny`
-  * `coverage run --source ./ --omit ./tests/server.py,./setup.py -m unittest tests`
+  * `pip install -U -r tests/requirements.txt`
+4. Run the test suite on your local.
+  * `cd /path/to/acme-tiny`
+  * `unset ACME_TINY_USE_STAGING` (optional, if set previously to use staging)
+  * `unset ACME_TINY_DOMAIN` (optional, if set previously to use staging)
+  * `export ACME_TINY_PEBBLE_BIN="..."` (optional, if different from `"$HOME/go/bin/pebble"`)
+  * `coverage erase` (removes any previous coverage data files)
+  * `coverage run --source . -m unittest tests` (runs the test suite)
+  * `coverage report -m` (optional, prints out coverage summary in console)
+  * `coverage html` (optional, generates html coverage report you can browse at `htmlcov/index.html`)
 
-## Why use FUSE?
+## Setup instructions (staging)
 
-Acme-tiny writes the challenge files for certificate issuance. In order to do
-full integration tests, we actually need to serve correct challenge files to
-the Let's Encrypt staging server on a real domain that they can verify. However,
-Travis-CI doesn't have domains associated with their test VMs, so we need to
-send the files to the remote server that does have a real domain.
+We also allow running the test suite against the official Let's Encrypt [staging](https://letsencrypt.org/docs/staging-environment/) server. Since the staging server is run by Let's Encrypt, you need to actually host a real domain an serve real challenge files. The simplest way to do this is to mount your remote server's static challenge file directory (see example instructions below).
 
-The test suite uses FUSE to do this. It creates a FUSE folder that simulates
-being a real folder to acme-tiny. When acme-tiny writes the challenge files
-in the mock folder, FUSE POSTs those files to the real server (which is running
-the included server.py), and the server starts serving them. That way, both
-acme-tiny and Let's Encrypt staging can verify and issue the test certificate.
-This technique allows for high test coverage on automated test runners (e.g.
-Travis-CI).
+1. Run a static server with a real domain (e.g. `test.mydomain.com`) with a challenge directory (instructions below are for Ubuntu 20.04, adjust as needed).
+  * `ssh ubuntu@test.mydomain.com` (log into your server)
+  * `mkdir -p /tmp/testfiles/.well-known/acme-challenge` (make the ACME challenge file directory)
+  * `cd /tmp/testfiles` (go to the test file base directory)
+  * `sudo python3 -m http.server 80 --bind 0.0.0.0` (start listening on port 80, NOTE: needs to run as root)
+  * Alternatively, if you are already have a web server running on port 80, adjust that server's config to serve files statically from your test directory.
+2. Mount your server's challenge directory on your local system (instructions below are for Ubuntu 20.04, adjust as needed).
+  * `sudo apt install sshfs` (if not already done, install sshfs)
+  * `sshfs ubuntu@test.mydomain.com:/tmp/testfiles/.well-known/acme-challenge /tmp/challenge-files`
+3. Setup a virtual environment for python:
+  * `virtualenv -p python3 /tmp/venv` (creates the virtualenv)
+  * `source /tmp/venv/bin/activate` (starts using the virtualenv)
+4. Install `acme-tiny` test dependencies:
+  * `cd /path/to/acme-tiny`
+  * `pip install -U -r tests/requirements.txt`
+5. Run the test suite on your local.
+  * `cd /path/to/acme-tiny`
+  * `export ACME_TINY_USE_STAGING="1"`
+  * `export ACME_TINY_DOMAIN="test.mydomain.com"`
+  * `export ACME_TINY_SSHFS_CHALLENGE_DIR="/tmp/challenge-files"`
+  * `coverage erase` (removes any previous coverage data files)
+  * `coverage run --source . -m unittest discover` (runs the test suite)
+  * `coverage report -m` (optional, prints out coverage summary in console)
+  * `coverage html` (optional, generates html coverage report you can browse at `htmlcov/index.html`)
+6. When done, unmount the remote directory
+  * `umount /tmp/challenge-files`
 

@@ -3,7 +3,7 @@
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen, Request # Python 3
-except ImportError:
+except ImportError: # pragma: no cover
     from urllib2 import urlopen, Request # Python 2
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
 
     # helper functions - base64 encode for jose spec
@@ -98,7 +98,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
-    log.info("Found domains: {0}".format(", ".join(domains)))
+    log.info(u"Found domains: {0}".format(", ".join(domains)))
 
     # get the ACME directory of urls
     log.info("Getting directory...")
@@ -137,7 +137,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
 
         # check that the file is in place
         try:
-            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+            wellknown_url = "http://{0}{1}/.well-known/acme-challenge/{2}".format(domain, "" if check_port is None else ":{0}".format(check_port), token)
             assert (disable_check or _do_request(wellknown_url)[0] == keyauthorization)
         except (AssertionError, ValueError) as e:
             raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
@@ -188,10 +188,11 @@ def main(argv=None):
     parser.add_argument("--directory-url", default=DEFAULT_DIRECTORY_URL, help="certificate authority directory url, default is Let's Encrypt")
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
+    parser.add_argument("--check-port", metavar="PORT", default=None, help="what port to use when self-checking the challenge file, default is port 80")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
