@@ -10,12 +10,12 @@ from subprocess import Popen, PIPE
 
 try:
     from urllib.request import urlopen, Request # Python 3
-except ImportError:
+except ImportError: # pragma: no cover
     from urllib2 import urlopen, Request # Python 2
 
 try:
     from StringIO import StringIO # Python 2
-except ImportError:
+except ImportError: # pragma: no cover
     from io import StringIO # Python 3
 
 import acme_tiny

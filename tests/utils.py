@@ -6,7 +6,7 @@ from tempfile import NamedTemporaryFile, mkdtemp
 from subprocess import Popen
 try:
     from urllib.request import urlopen # Python 3
-except ImportError:
+except ImportError: # pragma: no cover
     from urllib2 import urlopen # Python 2
 
 def gen_keys(domain):
