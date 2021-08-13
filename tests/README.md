@@ -23,7 +23,7 @@ In the default test setup, we use [pebble](https://github.com/letsencrypt/pebble
   * `unset ACME_TINY_DOMAIN` (optional, if set previously to use staging)
   * `export ACME_TINY_PEBBLE_BIN="..."` (optional, if different from `"$HOME/go/bin/pebble"`)
   * `coverage erase` (removes any previous coverage data files)
-  * `coverage run --source . -m unittest tests` (runs the test suite)
+  * `coverage run --source . --omit ./setup.py -m unittest tests` (runs the test suite)
   * `coverage report -m` (optional, prints out coverage summary in console)
   * `coverage html` (optional, generates html coverage report you can browse at `htmlcov/index.html`)
 
@@ -52,7 +52,7 @@ We also allow running the test suite against the official Let's Encrypt [staging
   * `export ACME_TINY_DOMAIN="test.mydomain.com"`
   * `export ACME_TINY_SSHFS_CHALLENGE_DIR="/tmp/challenge-files"`
   * `coverage erase` (removes any previous coverage data files)
-  * `coverage run --source . -m unittest discover` (runs the test suite)
+  * `coverage run --source . --omit ./setup.py -m unittest discover` (runs the test suite)
   * `coverage report -m` (optional, prints out coverage summary in console)
   * `coverage html` (optional, generates html coverage report you can browse at `htmlcov/index.html`)
 6. When done, unmount the remote directory
