@@ -219,7 +219,7 @@ class TestModule(unittest.TestCase):
             resp._orig_read = resp.read()
             # modify valid challenges and authorizations to invalid
             try:
-                resp_json = json.loads(resp._orig_read)
+                resp_json = json.loads(resp._orig_read.decode("utf8"))
                 if (
                     len(resp_json.get("challenges", [])) == 1
                     and resp_json['challenges'][0]['status'] == "valid"
@@ -247,12 +247,11 @@ class TestModule(unittest.TestCase):
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
             ])
-        except Exception as e:
+        except ValueError as e:
             result = e
         acme_tiny.urlopen = urlopenOriginal
 
         # should raise error that challenge didn't pass
-        self.assertIsInstance(result, ValueError)
         self.assertIn("Challenge did not pass for", result.args[0])
 
     def test_order_failure(self):
@@ -263,7 +262,7 @@ class TestModule(unittest.TestCase):
             resp._orig_read = resp.read()
             # modify valid orders to invalid
             try:
-                resp_json = json.loads(resp._orig_read)
+                resp_json = json.loads(resp._orig_read.decode("utf8"))
                 if (
                     resp_json.get("finalize", None) is not None
                     and resp_json.get("status", None) == "valid"
@@ -289,12 +288,11 @@ class TestModule(unittest.TestCase):
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
             ])
-        except Exception as e:
+        except ValueError as e:
             result = e
         acme_tiny.urlopen = urlopenOriginal
 
         # should raise error that challenge didn't pass
-        self.assertIsInstance(result, ValueError)
         self.assertIn("Order failed", result.args[0])
 
     ###########################
