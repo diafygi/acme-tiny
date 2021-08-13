@@ -51,6 +51,8 @@ jobs:
           pip install -U -r tests/requirements.txt
 
       - name: Mount staging.gethttpsforfree.com on local for serving challenge files
+        env:
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
         run: |
           sudo apt install sshfs
           export SSHFS_KEYFILE=$(pwd)/sshfs_key.pem
