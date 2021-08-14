@@ -254,6 +254,54 @@ class TestModule(unittest.TestCase):
         # should raise error that challenge didn't pass
         self.assertIn("Challenge did not pass for", result.args[0])
 
+    def test_malicious_challenge_token(self):
+        """ Raises error if malicious challenge token is provided by the CA """
+
+        # assume the CA wants to try to fool you into serving up your password file
+        malicious_token = "../../../../etc/passwd"
+        cleaned_token = "____________etc_passwd"
+
+        # man-in-the-middle ACME requests to modify the challenge token to something malicious
+        def urlopenMITM(*args, **kwargs):
+            resp = urlopenOriginal(*args, **kwargs)
+            resp._orig_read = resp.read()
+            try:
+                resp_json = json.loads(resp._orig_read.decode("utf8"))
+                if len([c for c in resp_json.get("challenges", []) if c['type'] == "http-01"]) == 1:
+                    challenge = [c for c in resp_json['challenges'] if c['type'] == "http-01"][0]
+                    challenge['token'] = malicious_token
+                    resp._orig_read = json.dumps(resp_json).encode("utf8")
+            except ValueError:
+                pass
+            # serve up modified response when read
+            def multi_read():
+                return resp._orig_read
+            resp.read = multi_read
+            return resp
+
+        # call acme-tiny with MITM'd urlopen
+        urlopenOriginal = acme_tiny.urlopen
+        acme_tiny.urlopen = urlopenMITM
+        try:
+            acme_tiny.main([
+                "--account-key", KEYS['account_key'].name,
+                "--csr", KEYS['domain_csr'].name,
+                "--acme-dir", self.tempdir,
+                "--directory-url", self.DIR_URL,
+                "--check-port", self.check_port,
+            ])
+        except ValueError as e:
+            result = e
+        acme_tiny.urlopen = urlopenOriginal
+
+        # should raise error that challenge didn't pass
+        self.assertIn("Challenge did not pass for", result.args[0])
+
+        # challenge file actually saved as a cleaned version
+        resp = urlopen(Request("http://{0}:{1}/.well-known/acme-challenge/{2}".format(DOMAIN, self.check_port, cleaned_token)))
+        token_data = resp.read().decode("utf8")
+        self.assertIn(cleaned_token, token_data)
+
     def test_order_failure(self):
         """ Raises error if order doesn't complete """
         # man-in-the-middle ACME requests to modify valid orders so we raise that exception
