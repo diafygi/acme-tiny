@@ -26,7 +26,6 @@ PEBBLE_BIN = os.getenv("ACME_TINY_PEBBLE_BIN") or "{}/go/bin/pebble".format(os.g
 DOMAIN = os.getenv("ACME_TINY_DOMAIN") or "local.gethttpsforfree.com"  # default to domain that resolves to 127.0.0.1
 USE_STAGING = bool(os.getenv("ACME_TINY_USE_STAGING"))  # default to false
 SSHFS_CHALLENGE_DIR = os.getenv("ACME_TINY_SSHFS_CHALLENGE_DIR")  # default to None (only used if USE_STAGING is True)
-KEYS = utils.gen_keys(DOMAIN)
 
 class TestModule(unittest.TestCase):
     """
@@ -36,6 +35,9 @@ class TestModule(unittest.TestCase):
         """
         Set up ACME server for each test (or use Let's Encrypt's staging server)
         """
+        # create new account keys every test
+        self.KEYS = utils.gen_keys(DOMAIN)
+
         # use Let's Encrypt staging server
         if USE_STAGING: # pragma: no cover
             os.unsetenv("SSL_CERT_FILE")  # use the default ssl trust store
@@ -82,8 +84,8 @@ class TestModule(unittest.TestCase):
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
-            "--account-key", KEYS['account_key'].name,
-            "--csr", KEYS['domain_csr'].name,
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
             "--directory-url", self.DIR_URL,
             "--check-port", self.check_port,
@@ -98,8 +100,8 @@ class TestModule(unittest.TestCase):
         """ Successfully issue a certificate via command line interface """
         crt, err = Popen([
             "python", "acme_tiny.py",
-            "--account-key", KEYS['account_key'].name,
-            "--csr", KEYS['domain_csr'].name,
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
             "--directory-url", self.DIR_URL,
             "--check-port", self.check_port,
@@ -112,7 +114,7 @@ class TestModule(unittest.TestCase):
         try:
             result = acme_tiny.main([
                 "--account-key", "/foo/bar",
-                "--csr", KEYS['domain_csr'].name,
+                "--csr", self.KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -126,7 +128,7 @@ class TestModule(unittest.TestCase):
         """ OpenSSL throws an error when the CSR is missing """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
+                "--account-key", self.KEYS['account_key'].name,
                 "--csr", "/foo/bar",
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
@@ -141,8 +143,8 @@ class TestModule(unittest.TestCase):
         """ Let's Encrypt rejects invalid domains """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['invalid_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['invalid_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -156,8 +158,8 @@ class TestModule(unittest.TestCase):
         """ Should be unable verify a nonexistent domain """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['nonexistent_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['nonexistent_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -171,8 +173,8 @@ class TestModule(unittest.TestCase):
         """ Can't use the account key for the CSR """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['account_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['account_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -192,8 +194,8 @@ class TestModule(unittest.TestCase):
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
-            "--account-key", KEYS['account_key'].name,
-            "--csr", KEYS['domain_csr'].name,
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
             "--directory-url", self.DIR_URL,
             "--check-port", self.check_port,
@@ -207,7 +209,10 @@ class TestModule(unittest.TestCase):
         # make sure the certificate was issued and the contact details were updated
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn(self.ca_issued_string, out.decode("utf8"))
-        self.assertIn("Updated contact details:\nmailto:devteam@gethttpsforfree.com\nmailto:boss@gethttpsforfree.com", log_string.decode("utf8"))
+        self.assertTrue((  # can be in either order
+            "Updated contact details:\nmailto:devteam@gethttpsforfree.com\nmailto:boss@gethttpsforfree.com" in log_string.decode("utf8")
+            or "Updated contact details:\nmailto:boss@gethttpsforfree.com\nmailto:devteam@gethttpsforfree.com" in log_string.decode("utf8")
+        ))
         # remove logging capture
         acme_tiny.LOGGER.removeHandler(debug_handler)
 
@@ -241,8 +246,8 @@ class TestModule(unittest.TestCase):
         acme_tiny.urlopen = urlopenMITM
         try:
             acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['domain_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -284,8 +289,8 @@ class TestModule(unittest.TestCase):
         acme_tiny.urlopen = urlopenMITM
         try:
             acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['domain_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -330,8 +335,8 @@ class TestModule(unittest.TestCase):
         acme_tiny.urlopen = urlopenMITM
         try:
             acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['domain_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -365,8 +370,8 @@ class TestModule(unittest.TestCase):
         """ Test that pebble server doesn't support CN subject domains """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['account_key'].name,
-                "--csr", KEYS['cn_csr'].name,
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['cn_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 "--check-port", self.check_port,
@@ -386,8 +391,8 @@ class TestModule(unittest.TestCase):
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         result = acme_tiny.main([
-            "--account-key", KEYS['account_key'].name,
-            "--csr", KEYS['cn_csr'].name,
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['cn_csr'].name,
             "--acme-dir", self.tempdir,
             "--directory-url", self.DIR_URL,
             #"--check-port", self.check_port, # defaults to port 80 anyway, so test that the default works
@@ -403,8 +408,8 @@ class TestModule(unittest.TestCase):
         """ Let's Encrypt rejects weak keys """
         try:
             result = acme_tiny.main([
-                "--account-key", KEYS['weak_key'].name,
-                "--csr", KEYS['domain_csr'].name,
+                "--account-key", self.KEYS['weak_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
                 "--acme-dir", self.tempdir,
                 "--directory-url", self.DIR_URL,
                 #"--check-port", self.check_port, # defaults to port 80 anyway, so test that the default works
