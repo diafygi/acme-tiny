@@ -179,13 +179,14 @@ service nginx reload
 0 0 1 * * /path/to/renew_cert.sh 2>> /var/log/acme_tiny.log
 ```
 
-NOTE: Since Let's Encrypt's ACME v2 release (acme-tiny 4.0.0+), the intermediate
+**NOTE:** Since Let's Encrypt's ACME v2 release (acme-tiny 4.0.0+), the intermediate
 certificate is included in the issued certificate download, so you no longer have
 to independently download the intermediate certificate and concatenate it to your
-signed certificate. If you have an bash script using acme-tiny &lt;4.0 (e.g. before
+signed certificate. If you have an shell script or Makefile using acme-tiny &lt;4.0 (e.g. before
 2018-03-17) with acme-tiny 4.0.0+, then you may be adding the intermediate
-certificate to your signed_chain.crt twice (not a big deal, it should still work fine,
-but just makes the certificate slightly larger than it needs to be). To fix,
+certificate to your signed_chain.crt twice (which
+[causes issues with at least GnuTLS 3.7.0](https://gitlab.com/gnutls/gnutls/-/issues/1131)
+besides making the certificate slightly larger than it needs to be). To fix,
 simply remove the bash code where you're downloading the intermediate and adding
 it to the acme-tiny certificate output.
 
