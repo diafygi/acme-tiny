@@ -207,9 +207,12 @@ reload your webserver without having permission to do anything else.
 
 ## Staging Environment
 
-Let's Encrypt recommends testing new configurations against their staging directory.
-Use `--dry-run` to set directory url appropriatly. For more information see
-[https://letsencrypt.org/docs/staging-environment/](https://letsencrypt.org/docs/staging-environment/).
+Let's Encrypt recommends testing new configurations against their staging servers,
+so when testing out your new setup, you can use
+`--directory-url https://acme-staging-v02.api.letsencrypt.org/directory`
+to issue fake test certificates instead of real ones from Let's Encrypt's production servers.
+See [https://letsencrypt.org/docs/staging-environment/](https://letsencrypt.org/docs/staging-environment/)
+for more details.
 
 ## Feedback/Contributing
 
