@@ -213,6 +213,7 @@ def setup_pebble(pebble_bin_path, bad_nonces=0):
     pebble_conf_file.flush()
 
     # start the pebble server
+    os.environ['PEBBLE_AUTHZREUSE'] = str(100)
     os.environ['PEBBLE_WFE_NONCEREJECT'] = str(bad_nonces)
     pebble_server_proc = Popen([pebble_bin_path, "-config", pebble_conf_file.name])
 

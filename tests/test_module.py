@@ -96,6 +96,38 @@ class TestModule(unittest.TestCase):
         out, err = Popen(["openssl", "x509", "-text", "-noout"], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(crt)
         self.assertIn(self.ca_issued_string, out.decode("utf8"))
 
+    def test_skip_valid_authorizations(self):
+        """ Authorizations that are already valid should be skipped """
+        # issue a valid cert
+        self.test_success_domain()
+
+        # add a logging handler that captures the info log output
+        log_output = StringIO()
+        debug_handler = logging.StreamHandler(log_output)
+        acme_tiny.LOGGER.addHandler(debug_handler)
+
+        # issue the cert again, where challenges should already be valid
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        result = acme_tiny.main([
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['domain_csr'].name,
+            "--acme-dir", self.tempdir,
+            "--directory-url", self.DIR_URL,
+            "--check-port", self.check_port,
+        ])
+        sys.stdout.seek(0)
+        crt = sys.stdout.read().encode("utf8")
+        sys.stdout = old_stdout
+        log_output.seek(0)
+        log_string = log_output.read().encode("utf8")
+
+        # remove logging capture
+        acme_tiny.LOGGER.removeHandler(debug_handler)
+
+        # should say the domain is already verified
+        self.assertIn("Already verified: {0}, skipping...".format(DOMAIN), log_string.decode("utf8"))
+
     def test_success_cli(self):
         """ Successfully issue a certificate via command line interface """
         crt, err = Popen([
