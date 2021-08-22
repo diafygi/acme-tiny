@@ -77,8 +77,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     pub_hex, pub_exp = re.search(pub_pattern, out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
-    alg = "RS256"
-    jwk = {
+    alg, jwk = "RS256", {
         "e": _b64(binascii.unhexlify(pub_exp.encode("utf-8"))),
         "kty": "RSA",
         "n": _b64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex).encode("utf-8"))),
@@ -174,15 +173,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent("""\
-            This script automates the process of getting a signed TLS certificate from Let's Encrypt using
-            the ACME protocol. It will need to be run on your server and have access to your private
-            account key, so PLEASE READ THROUGH IT! It's only ~200 lines, so it won't take long.
+            This script automates the process of getting a signed TLS certificate from Let's Encrypt using the ACME protocol.
+            It will need to be run on your server and have access to your private account key, so PLEASE READ THROUGH IT!
+            It's only ~200 lines, so it won't take long.
 
-            Example Usage:
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed_chain.crt
-
-            Example Crontab Renewal (once per month):
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed_chain.crt 2>> /var/log/acme_tiny.log
+            Example Usage: python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed_chain.crt
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
