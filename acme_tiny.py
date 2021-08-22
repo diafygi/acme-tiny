@@ -125,12 +125,12 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     for auth_url in order['authorizations']:
         authorization, _, _ = _send_signed_request(auth_url, None, "Error getting challenges")
         domain = authorization['identifier']['value']
-        log.info("Verifying {0}...".format(domain))
 
         # skip if already valid
         if authorization['status'] == "valid":
-            log.info("{0} already verified. Skipping.".format(domain))
+            log.info("Already verified: {0}, skipping...".format(domain))
             continue
+        log.info("Verifying {0}...".format(domain))
 
         # find the http-01 challenge and write the challenge file
         challenge = [c for c in authorization['challenges'] if c['type'] == "http-01"][0]
