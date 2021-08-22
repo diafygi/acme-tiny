@@ -12,6 +12,13 @@ except ImportError: # pragma: no cover
 def gen_keys(domain):
     """ Generate test account and domain keys """
 
+    # openssl config is system dependent
+    openssl_cnf = None
+    for possible_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
+        if os.path.exists(possible_cnf):
+            with open(possible_cnf) as f:
+                openssl_cnf = f.read().encode("utf8")
+
     # good account key
     account_key = NamedTemporaryFile()
     Popen(["openssl", "genrsa", "-out", account_key.name, "2048"]).wait()
@@ -27,9 +34,7 @@ def gen_keys(domain):
     # good domain csr
     domain_csr = NamedTemporaryFile()
     domain_conf = NamedTemporaryFile()
-    for openssl_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
-        if os.path.exists(openssl_cnf): break
-    domain_conf.write(open(openssl_cnf).read().encode("utf8"))
+    domain_conf.write(openssl_cnf)
     domain_conf.write("\n[SAN]\nsubjectAltName=DNS:{0}\n".format(domain).encode("utf8"))
     domain_conf.flush()
     domain_conf.seek(0)
@@ -46,9 +51,7 @@ def gen_keys(domain):
     # invalid domain csr
     invalid_csr = NamedTemporaryFile()
     invalid_conf = NamedTemporaryFile()
-    for openssl_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
-        if os.path.exists(openssl_cnf): break
-    invalid_conf.write(open(openssl_cnf).read().encode("utf8"))
+    invalid_conf.write(openssl_cnf)
     invalid_conf.write(u"\n[SAN]\nsubjectAltName=DNS:\xC3\xA0\xC2\xB2\xC2\xA0_\xC3\xA0\xC2\xB2\xC2\xA0.com\n".encode("utf8"))
     invalid_conf.seek(0)
     Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
@@ -58,9 +61,7 @@ def gen_keys(domain):
     # nonexistent domain csr
     nonexistent_csr = NamedTemporaryFile()
     nonexistent_conf = NamedTemporaryFile()
-    for openssl_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
-        if os.path.exists(openssl_cnf): break
-    nonexistent_conf.write(open(openssl_cnf).read().encode("utf8"))
+    nonexistent_conf.write(openssl_cnf)
     nonexistent_conf.write("\n[SAN]\nsubjectAltName=DNS:404.gethttpsforfree.com\n".encode("utf8"))
     nonexistent_conf.seek(0)
     Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key.name,
@@ -70,9 +71,7 @@ def gen_keys(domain):
     # account-signed domain csr
     account_csr = NamedTemporaryFile()
     account_conf = NamedTemporaryFile()
-    for openssl_cnf in ['/etc/pki/tls/openssl.cnf', '/etc/ssl/openssl.cnf']:
-        if os.path.exists(openssl_cnf): break
-    account_conf.write(open(openssl_cnf).read().encode("utf8"))
+    account_conf.write(openssl_cnf)
     account_conf.write("\n[SAN]\nsubjectAltName=DNS:{0}\n".format(domain).encode("utf8"))
     account_conf.seek(0)
     Popen(["openssl", "req", "-new", "-sha256", "-key", account_key.name,
