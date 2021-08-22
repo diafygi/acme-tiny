@@ -127,6 +127,11 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         domain = authorization['identifier']['value']
         log.info("Verifying {0}...".format(domain))
 
+        # skip if already valid
+        if authorization['status'] == "valid":
+            log.info("{0} already verified. Skipping.".format(domain))
+            continue
+
         # find the http-01 challenge and write the challenge file
         challenge = [c for c in authorization['challenges'] if c['type'] == "http-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
