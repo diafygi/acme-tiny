@@ -189,11 +189,13 @@ def main(argv=None):
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
     parser.add_argument("--check-port", metavar="PORT", default=None, help="what port to use when self-checking the challenge file, default is port 80")
+    parser.add_argument("--outfile", metavar="FILE", required=False, default="STDOUT", help="write signed cert to this file. default=STDOUT")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port)
-    sys.stdout.write(signed_crt)
+    with sys.stdout if args.outfile == "STDOUT" else open(args.outfile, "w") as fout:
+        fout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])
