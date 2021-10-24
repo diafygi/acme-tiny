@@ -196,7 +196,8 @@ def main(argv=None):
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port)
 
     with sys.stdout if args.outfile == "STDOUT" else open(args.outfile, "w") as fout:
-        LOGGER.info(f"Writing signed certificate to {args.outfile}")
+        LOGGER.info("Writing signed certificate to {outfile}".format(outfile=args.outfile))
+            )
         fout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
