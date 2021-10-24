@@ -197,7 +197,6 @@ def main(argv=None):
 
     with sys.stdout if args.outfile == "STDOUT" else open(args.outfile, "w") as fout:
         LOGGER.info("Writing signed certificate to {outfile}".format(outfile=args.outfile))
-            )
         fout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
