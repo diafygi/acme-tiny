@@ -79,6 +79,14 @@ class TestModule(unittest.TestCase):
             self._challenge_file_server.wait()
             shutil.rmtree(self._base_tempdir)
 
+    def test_module_linecount(self):
+        """ This project is supposed to remain under 200 lines """
+        test_dir = os.path.dirname(os.path.realpath(__file__))
+        module_path = os.path.abspath(os.path.join(test_dir, os.pardir, "acme_tiny.py"))
+        out, err = Popen(["wc", "-l", module_path], stdout=PIPE, stderr=PIPE).communicate()
+        num_lines = int(out.decode("utf8").split(" ", 1)[0])
+        self.assertTrue(num_lines <= 200)
+
     def test_success_domain(self):
         """ Successfully issue a certificate via subject alt name """
         old_stdout = sys.stdout
