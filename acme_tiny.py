@@ -16,20 +16,17 @@ LOGGER.setLevel(logging.INFO)
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None, eabkid=None, eabhmackey=None):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
 
-    # helper functions - base64 encode for jose spec
-    def _b64(b):
+    def _b64(b):  # helper function - base64 encode for jose spec
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
-    # helper function - run external commands
-    def _cmd(cmd_list, stdin=None, cmd_input=None, err_msg="Command Line Error"):
+    def _cmd(cmd_list, stdin=None, cmd_input=None, err_msg="Command Line Error"):  # helper function - run external commands
         proc = subprocess.Popen(cmd_list, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate(cmd_input)
         if proc.returncode != 0:
             raise IOError("{0}\n{1}".format(err_msg, err))
         return out
 
-    # helper function - make request and automatically parse json response
-    def _do_request(url, data=None, err_msg="Error", depth=0):
+    def _do_request(url, data=None, err_msg="Error", depth=0):  # helper function - make request and automatically parse json response
         try:
             resp = urlopen(Request(url, data=data, headers={"Content-Type": "application/jose+json", "User-Agent": "acme-tiny"}))
             resp_data, code, headers = resp.read().decode("utf8"), resp.getcode(), resp.headers
@@ -46,8 +43,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
             raise ValueError("{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(err_msg, url, data, code, resp_data))
         return resp_data, code, headers
 
-    # helper function - make signed requests
-    def _send_signed_request(url, payload, err_msg, depth=0):
+    def _send_signed_request(url, payload, err_msg, depth=0):  # helper function - make signed requests
         payload64 = "" if payload is None else _b64(json.dumps(payload).encode('utf8'))
         new_nonce = _do_request(directory['newNonce'])[2]['Replay-Nonce']
         protected = {"url": url, "alg": alg, "nonce": new_nonce}
@@ -61,8 +57,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         except IndexError: # retry bad nonces (they raise IndexError)
             return _send_signed_request(url, payload, err_msg, depth=(depth + 1))
 
-    # helper function - poll until complete
-    def _poll_until_not(url, pending_statuses, err_msg):
+    def _poll_until_not(url, pending_statuses, err_msg):  # helper function - poll until complete
         result, t0 = None, time.time()
         while result is None or result['status'] in pending_statuses:
             assert (time.time() - t0 < 3600), "Polling timeout" # 1 hour timeout
