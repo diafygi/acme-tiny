@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, hmac
 try:
     from urllib.request import urlopen, Request # Python 3
 except ImportError: # pragma: no cover
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None, eabkid=None, eabhmackey=None):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
 
     # helper functions - base64 encode for jose spec
@@ -108,11 +108,14 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     # create account, update contact details (if any), and set the global key identifier
     log.info("Registering account...")
     reg_payload = {"termsOfServiceAgreed": True} if contact is None else {"termsOfServiceAgreed": True, "contact": contact}
-    account, code, acct_headers = _send_signed_request(directory['newAccount'], reg_payload, "Error registering")
+    if eabkid and eabhmackey:  # https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
+        log.info("Building externalAccountBinding...")
+        reg_payload['externalAccountBinding'] = {"protected": _b64(json.dumps({"alg": "HS256", "kid": eabkid, "url": directory['newAccount']}).encode('utf-8')), "payload": _b64(json.dumps(jwk).encode('utf-8')), "signature": _b64(hmac.new(base64.urlsafe_b64decode(eabhmackey.strip() + '=='), (_b64(json.dumps({"alg": "HS256", "kid": eabkid, "url": directory['newAccount']}).encode('utf-8')) + "." + _b64(json.dumps(jwk).encode('utf-8'))).encode('utf-8'), digestmod=hashlib.sha256).digest())}
+    response, code, acct_headers = _send_signed_request(directory['newAccount'], reg_payload, "Error registering")
     log.info("{0} Account ID: {1}".format("Registered!" if code == 201 else "Already registered!", acct_headers['Location']))
-    if contact is not None:
-        account, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
-        log.info("Updated contact details:\n{0}".format("\n".join(account['contact'])))
+    if contact and code == 200:  # 200 == already reg --> update
+        response, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
+        log.info("Updated contact details:\n{0}".format("\n".join(response['contact'])))
 
     # create a new order
     log.info("Creating new order...")
@@ -175,10 +178,8 @@ def main(argv=None):
         description=textwrap.dedent("""\
             This script automates the process of getting a signed TLS certificate from Let's Encrypt using the ACME protocol.
             It will need to be run on your server and have access to your private account key, so PLEASE READ THROUGH IT!
-            It's only ~200 lines, so it won't take long.
-
-            Example Usage: python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed_chain.crt
-            """)
+            It's only ~200 lines, so it won't take long.\n\n
+            Example Usage: python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed_chain.crt""")
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
@@ -189,10 +190,11 @@ def main(argv=None):
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
     parser.add_argument("--check-port", metavar="PORT", default=None, help="what port to use when self-checking the challenge file, default is port 80")
+    parser.add_argument("--eabkid", metavar="KID", default=None, help="Key Identifier for External Account Binding"), parser.add_argument("--eabhmackey", metavar="HMAC", default=None, help="HMAC key for External Account Binding")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port, eabkid=args.eabkid, eabhmackey=args.eabhmackey)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover

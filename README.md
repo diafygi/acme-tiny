@@ -122,6 +122,21 @@ and read your private account key and CSR.
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed_chain.crt
 ```
 
+If your ACME CA mandates externalAccountBinding (eAB), provide those parameters like so:
+
+```
+# Run the script on your server
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ --eabkid 'PAtzxcSFQMQSdm9SLJTxCt0hwvvl5yNKPfnWBWqPk8o' --eabhmackey 'ZndUSkZvVldvMEFiRzQ5VWNCdERtNkNBNnBTcTl4czNKVEVxdUZiaEdpZXZNUVJBVmRuSFREcDJYX2s3X0NxTA' > ./signed_chain.crt
+```
+
+Some ACME CA mandate a contact at registration:
+
+```
+# Run the script on your server
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ --contact aaa@bbb.com --eabkid 'PAtzxcSFQMQSdm9SLJTxCt0hwvvl5yNKPfnWBWqPk8o' --eabhmackey 'ZndUSkZvVldvMEFiRzQ5VWNCdERtNkNBNnBTcTl4czNKVEVxdUZiaEdpZXZNUVJBVmRuSFREcDJYX2s3X0NxTA' > ./signed_chain.crt
+```
+
+
 ### Step 5: Install the certificate
 
 The signed https certificate chain that is output by this script can be used along
