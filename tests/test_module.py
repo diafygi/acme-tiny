@@ -224,8 +224,8 @@ class TestModule(unittest.TestCase):
         self.assertIsInstance(result, ValueError)
         self.assertIn(self.account_key_error, result.args[0])
 
-    def test_contact(self):
-        """ Make sure optional contact details can be set """
+    def test_contact_update(self):
+        """ Make sure optional contact details can be updated """
         # add a logging handler that captures the info log output
         log_output = StringIO()
         debug_handler = logging.StreamHandler(log_output)
@@ -233,6 +233,14 @@ class TestModule(unittest.TestCase):
         # call acme_tiny with new contact details
         old_stdout = sys.stdout
         sys.stdout = StringIO()
+        result = acme_tiny.main([
+            "--account-key", self.KEYS['account_key'].name,
+            "--csr", self.KEYS['domain_csr'].name,
+            "--acme-dir", self.tempdir,
+            "--directory-url", self.DIR_URL,
+            "--check-port", self.check_port,
+            "--contact", "mailto:devteam2@gethttpsforfree.com", "mailto:daboss@gethttpsforfree.com",
+        ])
         result = acme_tiny.main([
             "--account-key", self.KEYS['account_key'].name,
             "--csr", self.KEYS['domain_csr'].name,
