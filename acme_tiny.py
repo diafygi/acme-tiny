@@ -112,7 +112,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     log.info("{0} Account ID: {1}".format("Registered!" if code == 201 else "Already registered!", acct_headers['Location']))
     if contact is not None:
         account, _, _ = _send_signed_request(acct_headers['Location'], {"contact": contact}, "Error updating contact details")
-        log.info("Updated contact details:\n{0}".format("\n".join(account['contact'])))
+        log.info("Updated contact details:\n{0}".format("\n".join(account.get('contact') or [])))
 
     # create a new order
     log.info("Creating new order...")

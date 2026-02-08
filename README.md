@@ -1,7 +1,7 @@
 # acme-tiny
 
-[![Tests](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml/badge.svg)](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml)
-[![Coverage Status](https://coveralls.io/repos/github/diafygi/acme-tiny/badge.svg?branch=master)](https://coveralls.io/github/diafygi/acme-tiny?branch=master)
+[![Tests](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml/badge.svg?branch=main)](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml)
+[![Coverage Status](https://coveralls.io/repos/github/diafygi/acme-tiny/badge.svg?branch=main)](https://coveralls.io/github/diafygi/acme-tiny?branch=main)
 
 This is a tiny, auditable script that you can throw on your server to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates. Since it has

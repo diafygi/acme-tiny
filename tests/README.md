@@ -6,13 +6,14 @@ Testing acme-tiny requires a bit of setup since it needs to interact with a loca
 
 In the default test setup, we use [pebble](https://github.com/letsencrypt/pebble) as the mock Let's Encrypt CA server on your local computer. So you need to install that before running the test suite.
 
-1. Install the Let's Encrypt test server: `pebble` (instructions below are for Ubuntu 20.04, adjust as needed)
-  * `sudo apt install golang`
-  * `go get -u github.com/letsencrypt/pebble/...`
-  * `cd ~/go/src/github.com/letsencrypt/pebble && go install ./...`
-  * `~/go/bin/pebble -h` (should print out pebble usage help)
+1. Install the Let's Encrypt test server: `pebble` (instructions below are for Ubuntu 24.04 AMD64, adjust as needed)
+  * `wget https://github.com/letsencrypt/pebble/releases/latest/download/pebble-linux-amd64.tar.gz`
+  * `tar -xvzf pebble-linux-amd64.tar.gz -C /tmp`
+  * `chmod 744 /tmp/pebble-linux-amd64/linux/amd64/pebble`
+  * `/tmp/pebble-linux-amd64/linux/amd64/pebble -h` (should print out pebble usage help)
+  * `export ACME_TINY_PEBBLE_BIN="/tmp/pebble-linux-amd64/linux/amd64/pebble"`
 2. Setup a virtual environment for python:
-  * `virtualenv -p python3 /tmp/venv` (creates the virtualenv)
+  * `python3 -m venv /tmp/venv` (creates the virtualenv)
   * `source /tmp/venv/bin/activate` (starts using the virtualenv)
 3. Install `acme-tiny` test dependencies:
   * `cd /path/to/acme-tiny`
@@ -21,7 +22,7 @@ In the default test setup, we use [pebble](https://github.com/letsencrypt/pebble
   * `cd /path/to/acme-tiny`
   * `unset ACME_TINY_USE_STAGING` (optional, if set previously to use staging)
   * `unset ACME_TINY_DOMAIN` (optional, if set previously to use staging)
-  * `export ACME_TINY_PEBBLE_BIN="..."` (optional, if different from `"$HOME/go/bin/pebble"`)
+  * `export ACME_TINY_PEBBLE_BIN="/tmp/pebble-linux-amd64/linux/amd64/pebble"` (optional, if not set previously)
   * `coverage erase` (removes any previous coverage data files)
   * `coverage run --source . --omit ./setup.py -m unittest tests` (runs the test suite)
   * `coverage report -m` (optional, prints out coverage summary in console)
@@ -31,13 +32,13 @@ In the default test setup, we use [pebble](https://github.com/letsencrypt/pebble
 
 We also allow running the test suite against the official Let's Encrypt [staging](https://letsencrypt.org/docs/staging-environment/) server. Since the staging server is run by Let's Encrypt, you need to actually host a real domain an serve real challenge files. The simplest way to do this is to mount your remote server's static challenge file directory (see example instructions below).
 
-1. Run a static server with a real domain (e.g. `test.mydomain.com`) with a challenge directory (instructions below are for Ubuntu 20.04, adjust as needed).
+1. Run a static server with a real domain (e.g. `test.mydomain.com`) with a challenge directory (instructions below are for Ubuntu 24.04, adjust as needed).
   * `ssh ubuntu@test.mydomain.com` (log into your server)
   * `mkdir -p /tmp/testfiles/.well-known/acme-challenge` (make the ACME challenge file directory)
   * `cd /tmp/testfiles` (go to the test file base directory)
   * `sudo python3 -m http.server 80 --bind 0.0.0.0` (start listening on port 80, NOTE: needs to run as root)
   * Alternatively, if you are already have a web server running on port 80, adjust that server's config to serve files statically from your test directory.
-2. Mount your server's challenge directory on your local system (instructions below are for Ubuntu 20.04, adjust as needed).
+2. Mount your server's challenge directory on your local system (instructions below are for Ubuntu 24.04, adjust as needed).
   * `sudo apt install sshfs` (if not already done, install sshfs)
   * `sshfs ubuntu@test.mydomain.com:/tmp/testfiles/.well-known/acme-challenge /tmp/challenge-files`
 3. Setup a virtual environment for python:

@@ -1,1 +1,3 @@
 coverage
+setuptools >= 77.0.0
+virtualenv ; python_version <= "2"

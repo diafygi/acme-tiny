@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acme-tiny"
+version = "5.0.2"
+requires-python = ">=3.7,>=2.7"
+dependencies = []
+authors = [
+    {name = "Daniel Roesler", email = "diafygi@gmail.com"},
+]
+maintainers = [
+    {name = "Daniel Roesler", email = "diafygi@gmail.com"},
+]
+description = "A tiny script to issue and renew TLS certs from Let's Encrypt"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: System Administrators',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 2',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+]
+
+[project.urls]
+Homepage = "https://github.com/diafygi/acme-tiny"
+Documentation = "https://github.com/diafygi/acme-tiny"
+Repository = "https://github.com/diafygi/acme-tiny.git"
+"Bug Tracker" = "https://github.com/diafygi/acme-tiny/issues"
+
+[project.scripts]
+acme-tiny = "acme_tiny:main"
