@@ -1,3 +1,34 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=diafygi&project=acme-tiny&lang=id">Bahasa Indonesia</a>
+      </div>
+    </div>
+  </details>
+</div>
+
 # acme-tiny
 
 [![Tests](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml/badge.svg?branch=main)](https://github.com/diafygi/acme-tiny/actions/workflows/full-tests-with-coverage.yml)
