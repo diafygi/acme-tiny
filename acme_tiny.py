@@ -139,20 +139,22 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         with open(wellknown_path, "w") as wellknown_file:
             wellknown_file.write(keyauthorization)
 
-        # check that the file is in place
         try:
-            wellknown_url = "http://{0}{1}/.well-known/acme-challenge/{2}".format(domain, "" if check_port is None else ":{0}".format(check_port), token)
-            assert (disable_check or _do_request(wellknown_url)[0] == keyauthorization)
-        except (AssertionError, ValueError) as e:
-            raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
+            # check that the file is in place
+            try:
+                wellknown_url = "http://{0}{1}/.well-known/acme-challenge/{2}".format(domain, "" if check_port is None else ":{0}".format(check_port), token)
+                assert (disable_check or _do_request(wellknown_url)[0] == keyauthorization)
+            except (AssertionError, ValueError) as e:
+                raise ValueError("Wrote file to {0}, but couldn't download {1}: {2}".format(wellknown_path, wellknown_url, e))
 
-        # say the challenge is done
-        _send_signed_request(challenge['url'], {}, "Error submitting challenges: {0}".format(domain))
-        authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for {0}".format(domain))
-        if authorization['status'] != "valid":
-            raise ValueError("Challenge did not pass for {0}: {1}".format(domain, authorization))
-        os.remove(wellknown_path)
-        log.info("{0} verified!".format(domain))
+            # say the challenge is done
+            _send_signed_request(challenge['url'], {}, "Error submitting challenges: {0}".format(domain))
+            authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for {0}".format(domain))
+            if authorization['status'] != "valid":
+                raise ValueError("Challenge did not pass for {0}: {1}".format(domain, authorization))
+            log.info("{0} verified!".format(domain))
+        finally:
+            os.remove(wellknown_path)
 
     # finalize the order with the csr
     log.info("Signing certificate...")
