@@ -25,7 +25,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
         proc = subprocess.Popen(cmd_list, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate(cmd_input)
         if proc.returncode != 0:
-            raise IOError("{0}\n{1}".format(err_msg, err))
+            raise IOError("{0}\n{1}".format(err_msg, err.decode('utf8')))
         return out
 
     # helper function - make request and automatically parse json response
