@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acme-tiny"
-version = "5.0.2"
+version = "5.0.3"
 requires-python = ">=3.7,>=2.7"
 dependencies = []
 authors = [
