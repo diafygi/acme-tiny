@@ -54,7 +54,7 @@ wget -O - "https://gist.githubusercontent.com/JonLundy/f25c99ee0770e19dc595/raw/
 cp /etc/letsencrypt/accounts/acme-v01.api.letsencrypt.org/directory/<id>/private_key.json private_key.json
 
 # Create a DER encoded private key
-openssl asn1parse -noout -out private_key.der -genconf <(python2 conv.py private_key.json)
+openssl asn1parse -noout -out private_key.der -genconf <(python3 conv.py private_key.json)
 
 # Convert to PEM
 openssl rsa -in private_key.der -inform der > account.key

@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
-try:
-    from urllib.request import urlopen, Request # Python 3
-except ImportError: # pragma: no cover
-    from urllib2 import urlopen, Request # Python 2
+from urllib.request import urlopen, Request
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org" # DEPRECATED! USE DEFAULT_DIRECTORY_URL INSTEAD
 DEFAULT_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
