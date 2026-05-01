@@ -9,6 +9,42 @@ to be run on your server and have access to your private Let's Encrypt account
 key, I tried to make it as tiny as possible (currently less than 200 lines).
 The only prerequisites are python and openssl.
 
+This fork of the https://github.com/diafygi/acme-tiny/ repo supports
+`--challenge-deploy` as an alternative to the `--acme-dir` option, to run
+a script to deploy the challenge. This makes it easier to separate privileges
+needed to communicate with the ACME server (this script) from those needed
+to publish the challenge material.
+
+On standard input on a single line, the deployment script gets
+the domain, token, and key authorization strings, separated by spaces.
+The rough equivalent of the
+
+```
+   --acme-dir /var/www/acme-challenges/
+```
+behaviour can thus be achieved with
+```
+   --challenge-deploy 'read d t ka ; echo "$ka" > /var/www/acme-challenges/"$t"'
+   --challenge-cleanup 'read d t ka ; rm -f /var/www/acme-challenges/"$t"'
+```
+There is also a `--challenge-cleanup` counterpart, run with the same input
+after the authorization passed and the challenge material is no longer needed.
+
+But you probably want to use this version of the script for cases like
+```
+   --challenge-deploy /usr/local/bin/acme-challenge-deploy
+```
+or
+```
+   --challenge-type dns-01
+   --challenge-deploy 'ssh -i ~/.ssh/acme-deploy acme@web.example.com 2>&1'
+   --challenge-cleanup 'ssh -i ~/.ssh/acme-deploy acme@web.example.com cleanup 2>&1'
+```
+
+The script also supports option `--challenge-type`, defaulting to `http-01`
+and supporting `dns-01`, which formats the key authorization string passed
+to the deploy and cleanup scripts in a way expected in the DNS TXT record.
+
 **PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE ACCOUNT KEY!**
 
 ## Donate
@@ -120,6 +156,9 @@ and read your private account key and CSR.
 ```
 # Run the script on your server
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/challenges/ > ./signed_chain.crt
+# or
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr \
+   --challenge-deploy 'read d t ka ; echo "$ka" > /var/www/acme-challenges/"$t"' > ./signed_chain.crt
 ```
 
 ### Step 5: Install the certificate
@@ -169,7 +208,9 @@ for example script).
 Example of a `renew_cert.sh`:
 ```sh
 #!/usr/bin/sh
-python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /var/www/challenges/ > /path/to/signed_chain.crt.tmp || exit
+python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr \
+   --challenge-deploy 'read d t ka ; echo "$ka" > /var/www/acme-challenges/"$t"' \
+   > /path/to/signed_chain.crt.tmp || exit
 mv /path/to/signed_chain.crt.tmp /path/to/signed_chain.crt
 service nginx reload
 ```
