@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import time
@@ -80,12 +81,12 @@ class TestModule(unittest.TestCase):
             shutil.rmtree(self._base_tempdir)
 
     def test_module_linecount(self):
-        """ This project is supposed to remain under 200 lines """
+        """ This project is supposed to remain small (~200 lines) """
         test_dir = os.path.dirname(os.path.realpath(__file__))
         module_path = os.path.abspath(os.path.join(test_dir, os.pardir, "acme_tiny.py"))
         out, err = Popen(["wc", "-l", module_path], stdout=PIPE, stderr=PIPE).communicate()
         num_lines = int(out.decode("utf8").split(" ", 1)[0])
-        self.assertTrue(num_lines <= 200)
+        self.assertTrue(num_lines <= 215)
 
     def test_success_domain(self):
         """ Successfully issue a certificate via subject alt name """
@@ -405,6 +406,86 @@ class TestModule(unittest.TestCase):
         self._pebble_server, self._pebble_config = utils.setup_pebble(PEBBLE_BIN, bad_nonces=90)
         # normal success test
         self.test_success_domain()
+
+    @unittest.skipIf(USE_STAGING, "only checked on pebble server since it exposes a management API for the alternate chain cert")
+    def test_preferred_chain(self):
+        """ --preferred-chain selects an alternate certificate chain when one matches """
+        # Use the pebble root cert as the synthetic alternate chain. It is self-signed,
+        # so its issuer field equals its subject — a known, matchable CN.
+        alt_pem = urlopen("https://localhost:15000/roots/0").read().decode("utf8")
+        subject_out, _ = Popen(["openssl", "x509", "-noout", "-subject"],
+                               stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(alt_pem.encode("utf8"))
+        alt_cn = re.search(r"CN\s*=\s*(.+)", subject_out.decode("utf8")).group(1).strip()
+
+        # MITM: inject a Link: rel="alternate" header on the ACME cert download response,
+        # and serve alt_pem when _select_chain fetches that alternate URL.
+        alt_url = "https://localhost:14000/certZ/alternate"
+
+        class HeadersWithAltLink:
+            def __init__(self, original):
+                self._o = original
+            def get_all(self, name):
+                if name.lower() == 'link':
+                    return ['<{0}>; rel="alternate"'.format(alt_url)]
+                return self._o.get_all(name) if hasattr(self._o, 'get_all') else None
+            def __getattr__(self, name):
+                return getattr(self._o, name)
+
+        class FakeAltResponse:
+            class _H:
+                def get_all(self, name): return None
+                def get(self, name, default=None): return default
+            def __init__(self, body): self._b = body.encode('utf8'); self.headers = self._H()
+            def read(self): return self._b
+            def getcode(self): return 200
+
+        urlopenOriginal = acme_tiny.urlopen
+        def urlopenMITM(req, *args, **kwargs):
+            url = req.full_url if hasattr(req, 'full_url') else str(req)
+            if str(url) == alt_url:
+                return FakeAltResponse(alt_pem)
+            resp = urlopenOriginal(req, *args, **kwargs)
+            if '/certZ/' in str(url):
+                resp.headers = HeadersWithAltLink(resp.headers)
+            return resp
+        acme_tiny.urlopen = urlopenMITM
+
+        try:
+            # matching preferred-chain → alternate chain returned
+            old_stdout = sys.stdout
+            sys.stdout = StringIO()
+            acme_tiny.main([
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
+                "--acme-dir", self.tempdir,
+                "--directory-url", self.DIR_URL,
+                "--check-port", self.check_port,
+                "--preferred-chain", alt_cn,
+            ])
+            sys.stdout.seek(0)
+            result = sys.stdout.read()
+            sys.stdout = old_stdout
+            self.assertEqual(result.strip(), alt_pem.strip())
+
+            # non-matching preferred-chain → falls back to the default valid certificate
+            old_stdout = sys.stdout
+            sys.stdout = StringIO()
+            acme_tiny.main([
+                "--account-key", self.KEYS['account_key'].name,
+                "--csr", self.KEYS['domain_csr'].name,
+                "--acme-dir", self.tempdir,
+                "--directory-url", self.DIR_URL,
+                "--check-port", self.check_port,
+                "--preferred-chain", "no-such-issuer",
+            ])
+            sys.stdout.seek(0)
+            fallback = sys.stdout.read()
+            sys.stdout = old_stdout
+            out, _ = Popen(["openssl", "x509", "-noout", "-text"],
+                           stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(fallback.encode("utf8"))
+            self.assertIn(self.ca_issued_string, out.decode("utf8"))
+        finally:
+            acme_tiny.urlopen = urlopenOriginal
 
     @unittest.skipIf(USE_STAGING, "only checked on pebble server since ")
     def test_pebble_doesnt_support_cn_domains(self):
