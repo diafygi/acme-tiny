@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check=False, directory_url=DEFAULT_DIRECTORY_URL, contact=None, check_port=None, preferred_chain=None):
     directory, acct_headers, alg, jwk = None, None, None, None # global variables
 
     # helper functions - base64 encode for jose spec
@@ -164,10 +164,22 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, disable_check
     if order['status'] != "valid":
         raise ValueError("Order failed: {0}".format(order))
 
+    # helper function - select preferred chain from ACME alternate Link headers
+    def _select_chain(pem, headers, preferred):
+        alt_urls = [re.match(r'\s*<([^>]+)>', p.strip()).group(1) for lv in (headers.get_all('Link') if hasattr(headers, 'get_all') else []) or [] for p in lv.split(',') if '; rel="alternate"' in p and re.match(r'\s*<([^>]+)>', p.strip())]
+        for alt_url in alt_urls:
+            alt_pem, _, _ = _send_signed_request(alt_url, None, "Alternate certificate download failed")
+            for cert in re.findall(r'(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)', alt_pem, re.DOTALL):
+                try:
+                    if preferred.lower() in _cmd(["openssl", "x509", "-noout", "-issuer"], stdin=subprocess.PIPE, cmd_input=cert.encode('utf8'), err_msg="OpenSSL Error").decode('utf8').lower():
+                        log.info("Using alternate chain matching '{0}'".format(preferred)); return alt_pem
+                except IOError: pass
+        return pem
+
     # download the certificate
-    certificate_pem, _, _ = _send_signed_request(order['certificate'], None, "Certificate download failed")
+    certificate_pem, _, cert_headers = _send_signed_request(order['certificate'], None, "Certificate download failed")
     log.info("Certificate signed!")
-    return certificate_pem
+    return _select_chain(certificate_pem, cert_headers, preferred_chain) if preferred_chain else certificate_pem
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
@@ -189,10 +201,11 @@ def main(argv=None):
     parser.add_argument("--ca", default=DEFAULT_CA, help="DEPRECATED! USE --directory-url INSTEAD!")
     parser.add_argument("--contact", metavar="CONTACT", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
     parser.add_argument("--check-port", metavar="PORT", default=None, help="what port to use when self-checking the challenge file, default is port 80")
+    parser.add_argument("--preferred-chain", metavar="PREFERRED_CHAIN", default=None, help="if the CA offers multiple chains, select the one containing this string in an issuer CN (e.g. 'ISRG Root X1')")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca, disable_check=args.disable_check, directory_url=args.directory_url, contact=args.contact, check_port=args.check_port, preferred_chain=args.preferred_chain)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
