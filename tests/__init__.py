@@ -1,2 +1,2 @@
-from .test_module import TestModule
-from .test_install import TestInstall
+from .test_module import TestModule as TestModule
+from .test_install import TestInstall as TestInstall
