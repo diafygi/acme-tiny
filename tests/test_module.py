@@ -1,11 +1,9 @@
 import os
 import sys
 import json
-import time
 import shutil
 import logging
 import unittest
-import tempfile
 from subprocess import Popen, PIPE
 
 try:
@@ -91,7 +89,7 @@ class TestModule(unittest.TestCase):
         """ Successfully issue a certificate via subject alt name """
         old_stdout = sys.stdout
         sys.stdout = StringIO()
-        result = acme_tiny.main([
+        acme_tiny.main([
             "--account-key", self.KEYS['account_key'].name,
             "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
@@ -117,7 +115,7 @@ class TestModule(unittest.TestCase):
         # issue the cert again, where challenges should already be valid
         old_stdout = sys.stdout
         sys.stdout = StringIO()
-        result = acme_tiny.main([
+        acme_tiny.main([
             "--account-key", self.KEYS['account_key'].name,
             "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
@@ -125,7 +123,7 @@ class TestModule(unittest.TestCase):
             "--check-port", self.check_port,
         ])
         sys.stdout.seek(0)
-        crt = sys.stdout.read().encode("utf8")
+        sys.stdout.read().encode("utf8")
         sys.stdout = old_stdout
         log_output.seek(0)
         log_string = log_output.read().encode("utf8")
@@ -234,7 +232,7 @@ class TestModule(unittest.TestCase):
         # call acme_tiny with new contact details
         old_stdout = sys.stdout
         sys.stdout = StringIO()
-        result = acme_tiny.main([
+        acme_tiny.main([
             "--account-key", self.KEYS['account_key'].name,
             "--csr", self.KEYS['domain_csr'].name,
             "--acme-dir", self.tempdir,
@@ -431,7 +429,7 @@ class TestModule(unittest.TestCase):
         """ Successfully issue a certificate via common name """
         old_stdout = sys.stdout
         sys.stdout = StringIO()
-        result = acme_tiny.main([
+        acme_tiny.main([
             "--account-key", self.KEYS['account_key'].name,
             "--csr", self.KEYS['cn_csr'].name,
             "--acme-dir", self.tempdir,
